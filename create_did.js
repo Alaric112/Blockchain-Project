@@ -12,11 +12,11 @@ const web3 = new Web3('HTTP://127.0.0.1:7545');
       console.error("No accounts found on Ganache.");
       return;
     }
-    const address = accounts[1];
+    const address = accounts[0];
 
     // Private key of the selected account.
     // For Ganache, for example, the first default account has a known private key:
-    const privateKey = '0xff16c9f28c9afa73422de10adce3b8eb33821b2ea2a3116a9ef58e3c9761cab1';
+    const privateKey = '0x673ee4e9f139997646bb15ef0630949a6e817292223ceab600627ebc5fd5673c';
     // Ensure the private key matches the chosen account.
     // Retrieve the chain ID from the network (Ganache typically uses 1337 or 5777)
     const chainId = await web3.eth.getChainId();
