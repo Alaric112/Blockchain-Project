@@ -1,6 +1,6 @@
 const { Web3 } = require('web3');
 const { EthrDID } = require('ethr-did');
-const { createVerifiableCredentialJwt, verifyCredential } = require('did-jwt-vc');  //npm install did-jwt-vc
+const { createVerifiableCredentialJwt } = require('did-jwt-vc');  //npm install did-jwt-vc
 
 
 (async () => {
