@@ -85,8 +85,7 @@ const crypto = require('crypto');
   const vcJwt = await createVerifiableCredentialJwt(vcPayload, issuer);
   console.log("\n Signed VC (with hashed claims):\n", vcJwt);
 
-  // === Step 3: Simulate selective disclosure ===
-  // The holder decides to reveal only the nationality
+  // === Step 3: Simulate selective disclosure 
   const disclosedClaims = [
     {
     field: "id",
@@ -105,7 +104,8 @@ const crypto = require('crypto');
       type: ["VerifiablePresentation"],
       verifiableCredential: [vcJwt]
     },
-    disclosedClaims
+    disclosedClaims,
+    challenge : "0xCHALLENGE"
   };
 
   const vpJwt = await createVerifiablePresentationJwt(vpPayload, subject);
