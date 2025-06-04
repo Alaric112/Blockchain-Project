@@ -20,7 +20,7 @@ const crypto = require('crypto');
   const privateKey_subject = '0xd11683164c46e04a6b99f740aa8a9a132a11bda45de2c829170b1bc078649612'; // Subject of the VC
   const chainId = await web3.eth.getChainId();
 
-  // Create your DID
+  // Create issuer DID
   const issuer = new EthrDID({
     identifier: address_issuer,
     privateKey: privateKey_issuer,
@@ -28,6 +28,7 @@ const crypto = require('crypto');
     chainNameOrId: chainId
   });
 
+   // Create client DID
   const subject = new EthrDID({
     identifier: address_subject,
     privateKey: privateKey_subject,
