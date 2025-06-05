@@ -1,4 +1,5 @@
 - Riguardo "Purchase&Mint.sol"
-Le variabili price e payAmount dovrebbero essere float, ma in Solidity non vi è un tipo built-in float.
+Le variabili price e payAmount dovrebbero essere float, ma in Solidity non vi è un tipo built-in float. (xxx)
 
 Nella funzione "claimOrder(...)" va capito come si vuole impostare l'idea di bloccare l'amount di ETH. (mappa address -> uint256 e magari seconda mappa dove per ciascun address si tiene conto di quanti ethereum sono attualmente 'freezati'?)
+Nella funzione "merchantClaim(...)" va implementato il check sul numero di conferme che ha ricevuto la transazione sulla chain (N=5)?
