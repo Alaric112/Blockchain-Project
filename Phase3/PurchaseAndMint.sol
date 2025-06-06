@@ -2,7 +2,11 @@
 
 pragma solidity ^0.8.0;
 
+import "./ERC721.sol";
+
 contract PurchaseAndMint {
+
+    MyNFT public nft;
 
     struct Order {
         string merchantDID;
@@ -17,10 +21,15 @@ contract PurchaseAndMint {
     mapping(uint256 => address) private invokerMerchant; //orderId => merchantAddress
     mapping(uint256 => bool) private settledOrders;
     mapping(address => uint256) private escrowedethr; //buyer => ethr escrowed
+    mapping(uint256 => uint256) private orderClaimBlock; //orderId => minting block
 
     event OrderRegistered(uint256 orderId, string shopDID, uint256 price);
     event OrderClaimed(uint256 orderId, address buyer, uint256 cost);
     event OrderSettled(uint256 orderId);
+
+    constructor(address nftAddress) {
+        nft = MyNFT(nftAddress);
+    }
 
     function registerOrder(uint256 orderId, string calldata shopDID, uint256 price, uint256 expiration, bytes32 commitment) public { 
         require(orders[orderId].expirationDate == 0, "Order already registered!");
@@ -48,7 +57,8 @@ contract PurchaseAndMint {
 
         claimedOrders[orderId]= true;
         buyers[orderId] = msg.sender;
-        escrowedethr[msg.sender] == payAmount;
+        escrowedethr[msg.sender] = payAmount;
+        orderClaimBlock[orderId] = block.number;
 
         emit OrderClaimed(orderId, msg.sender, payAmount);
     }
@@ -57,10 +67,12 @@ contract PurchaseAndMint {
         
         require(invokerMerchant[orderId] == msg.sender, "Only the merchant who originally placed the order can claim it!");
         require(claimedOrders[orderId] == true, "Order not yet claimed by buyer!");
+        require(block.number >= (orderClaimBlock[orderId] +5), "The transaction has not received enough confirmations yet!"); //supposing N = 5
         require(settledOrders[orderId] == false, "Order already settled!");
 
         address buyer = buyers[orderId];
         escrowedethr[buyer] -= orders[orderId].cost;
+        nft.mint(buyer, orderId);
         settledOrders[orderId] = true;
 
         emit OrderSettled(orderId);
