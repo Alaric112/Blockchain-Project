@@ -1,0 +1,2 @@
+- Riguardo "Purchase&Mint.sol"
+Nella funzione "merchantClaim(...)" va implementato il check sul numero di conferme che ha ricevuto la transazione sulla chain (N=5)?
