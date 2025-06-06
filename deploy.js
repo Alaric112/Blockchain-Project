@@ -20,7 +20,7 @@ async function deployContract() {
     // Deploy the contract using the bytecode
     const deployedContract = await contract
         .deploy({ data: '0x' + bytecode })
-        .send({ from: accounts[0], gas: 4000000 });
+        .send({ from: accounts[0], gas: 3000000, gasPrice: '30000000000' });
 
     console.log(' Contract successfully deployed at address:', deployedContract.options.address);
 }

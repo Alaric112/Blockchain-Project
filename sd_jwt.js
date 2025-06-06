@@ -16,8 +16,8 @@ const crypto = require('crypto');
   const accounts = await web3.eth.getAccounts();
   const address_issuer = accounts[0];
   const address_subject = accounts[1]; // Subject of the VC
-  const privateKey_issuer = '0x3a20e57dbc146c564614c52235654379256f5adcb307320ef48c20e366a48af2';
-  const privateKey_subject = '0xd11683164c46e04a6b99f740aa8a9a132a11bda45de2c829170b1bc078649612'; // Subject of the VC
+  const privateKey_issuer = '0xe01c26f56ea3aefcf281e5e38d67179952ea04e4c25a24e1a66e310ff082b9db';
+  const privateKey_subject = '0x4b67558fec5518047c630b2b02be537c81792c72d93b216e2264e143859d8c40'; // Subject of the VC
   const chainId = await web3.eth.getChainId();
 
   // Create issuer DID
@@ -79,7 +79,7 @@ const crypto = require('crypto');
           type: "RevocationList2021Status",
           statusListIndex: "1234",
           statusListCredential: "https://issuer.gov.it/statuslist/7.json"
-  }
+        }
       }
   };
 
@@ -114,7 +114,7 @@ const crypto = require('crypto');
 
   
   // === Step 4: Verify the VP ===
-  const registryAddress = '0xBD6286dAcBc302a5f65fcc5Ea8941D5559e0Aa25'; // <-- replace with the DID contract address
+  const registryAddress = '0xBca8b9a2D349375FfeC8C7DB4Fc7e56bDC33cD65'; // <-- replace with the DID contract address
   const resolver = new Resolver(ethrDidResolver.getResolver({
     networks: [{
       name: chainId,
