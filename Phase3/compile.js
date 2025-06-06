@@ -2,33 +2,62 @@ const solc = require('solc');
 const fs = require('fs');
 const path = require('path');
 
-// Reads the Solidity file for the NFT
-const contractPath = path.resolve(__dirname, 'PurchaseAndMint.sol');
-const sourceCode = fs.readFileSync(contractPath, 'utf8');
+// Function to read the Solidity file
+function readContract(contractName) {
+    const contractPath = path.resolve(__dirname, contractName);
+    return fs.readFileSync(contractPath, 'utf8');
+}
 
-// Compiles the contract
+// Read contracts
+const nftSource = readContract('ERC721.sol');
+const purchaseAndMintSource = readContract('PurchaseAndMint.sol');
+
+// Compiles the contracts
 const input = {
     language: 'Solidity',
     sources: {
-        'PurchaseAndMint.sol': { content: sourceCode },
+        'ERC721.sol': { content: nftSource },
+        'PurchaseAndMint.sol': { content: purchaseAndMintSource },
     },
     settings: {
         outputSelection: {
             '*': {
-                '*': ['*'],
+                '*': ['abi', 'evm.bytecode'],
             },
         },
     },
 };
 
-const compiledContract = JSON.parse(solc.compile(JSON.stringify(input)));
+const compiledContracts = JSON.parse(solc.compile(JSON.stringify(input)));
 
-// Extracts the ABI and Bytecode
-const abi = compiledContract.contracts['PurchaseAndMint.sol'].PurchaseAndMint.abi;
-const bytecode = compiledContract.contracts['PurchaseAndMint.sol'].PurchaseAndMint.evm.bytecode.object;
+if (compiledContracts.errors) {
+    compiledContracts.errors.forEach(err => {
+        console.error(err.formattedMessage);
+    });
+    throw new Error('Compilation failed');
+}
 
-// Saves ABI and Bytecode to files
-fs.writeFileSync('PurchaseAndMint.json', JSON.stringify(abi, null, 2));
-fs.writeFileSync('PurchaseAndMint.bin', bytecode);
+console.log('Contracts keys:', Object.keys(compiledContracts.contracts));
+// Function to write ABI and Bytecode
+function writeOutput(fileName, contractName) {
+    const contractOutput = compiledContracts.contracts[fileName][contractName];
 
-console.log(' Compilation successful!');
+    if (!contractOutput) {
+        console.error(`Error: Contract ${contractName} not found in ${fileName}.`);
+        process.exit(1);
+    }
+
+    const abi = contractOutput.abi;
+    const bytecode = contractOutput.evm.bytecode.object;
+
+    fs.writeFileSync(`${contractName}Abi.json`, JSON.stringify(abi, null, 2));
+    fs.writeFileSync(`${contractName}Bytecode.bin`, bytecode);
+
+    console.log(`${contractName} compiled successfully!`);
+}
+
+// Write ABI and Bytecode files for each contract
+writeOutput('ERC721.sol', 'MyNFT');
+writeOutput('PurchaseAndMint.sol', 'PurchaseAndMint');
+
+console.log('All contracts compiled successfully!');
