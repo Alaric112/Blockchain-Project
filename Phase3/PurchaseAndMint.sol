@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: MIT */
 
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.0;
 
-import "./ERC721.sol";
+import "./MyTokenNFT.sol";
 
 contract PurchaseAndMint {
 
-    MyNFT public nft;
+    MyTokenNFT public nft;
 
     struct Order {
         string merchantDID;
@@ -15,38 +15,45 @@ contract PurchaseAndMint {
         bytes32 commitment;
     }
 
-    mapping(uint256 => Order) private orders; //orderId => order
-    mapping(uint256 =>  bool) private claimedOrders;
-    mapping(uint256 => address) private buyers;
-    mapping(uint256 => address) private invokerMerchant; //orderId => merchantAddress
-    mapping(uint256 => bool) private settledOrders;
-    mapping(address => uint256) private escrowedethr; //buyer => ethr escrowed
-    mapping(uint256 => uint256) private orderClaimBlock; //orderId => minting block
+    mapping(uint256 => Order)   private orders;             // orderId → dati dell’ordine
+    mapping(uint256 => bool)    private claimedOrders;      // orderId → “già claimato?”
+    mapping(uint256 => address) private buyers;             // orderId → address del buyer (chi ha claimato)
+    mapping(uint256 => address) private invokerMerchant;    // orderId → address del merchant che lo ha registrato
+    mapping(uint256 => bool)    private settledOrders;      // orderId → “già finalizzato?”
+    mapping(address => uint256) private escrowedethr;       // buyer → quantità di ETH in escrow
+    mapping(uint256 => uint256) private orderClaimBlock;    // orderId → numero di blocco in cui è stato fatto claim
 
-    event OrderRegistered(uint256 orderId, string shopDID, uint256 price);
-    event OrderClaimed(uint256 orderId, address buyer, uint256 cost);
-    event OrderSettled(uint256 orderId);
+    event OrderRegistered(uint256 indexed orderId, string shopDID, uint256 price);
+    event OrderClaimed(uint256 indexed orderId, address indexed buyer, uint256 cost);
+    event OrderSettled(uint256 indexed orderId);
 
     constructor(address nftAddress) {
-        nft = MyNFT(nftAddress);
+        nft = MyTokenNFT(nftAddress);
     }
 
-    function registerOrder(uint256 orderId, string calldata shopDID, uint256 price, uint256 expiration, bytes32 commitment) public { 
+    // =======================================================
+    // 1) registerOrder: chiama il merchant per registrare
+    //    un nuovo ordine “off-chain”
+    // =======================================================
+    function registerOrder(uint256  orderId, string calldata shopDID, uint256  price, uint256  expiration, bytes32  commitment) public {
+        
         require(orders[orderId].expirationDate == 0, "Order already registered!");
         require(invokerMerchant[orderId] == address(0), "Order already registered!");
 
         orders[orderId] = Order({
-            merchantDID : shopDID,
-            cost : price,
+            merchantDID    : shopDID,
+            cost           : price,
             expirationDate : expiration,
-            commitment : commitment
+            commitment     : commitment
         });
 
-        invokerMerchant[orderId] = msg.sender; 
-
+        invokerMerchant[orderId] = msg.sender;
         emit OrderRegistered(orderId, shopDID, price);
     }
 
+    // =======================================================
+    // 2) claimOrder: il buyer rivelare l’orderSecret e paga
+    // =======================================================
     function claimOrder(uint256 orderId, bytes32 orderSecret, uint256 payAmount) public {
 
         require(orders[orderId].expirationDate != 0, "Order don't exists!");
@@ -63,18 +70,34 @@ contract PurchaseAndMint {
         emit OrderClaimed(orderId, msg.sender, payAmount);
     }
 
+    // =======================================================
+    // 3) merchantClaim: dopo ≥5 blocchi il merchant “finalizza”
+    //    - trasferisce gli ETH al merchant
+    //    - chiama nft.mint(buyer) → generiamo un nuovo tokenID sequenziale
+    // =======================================================
     function merchantClaim(uint256 orderId) public {
         
-        require(invokerMerchant[orderId] == msg.sender, "Only the merchant who originally placed the order can claim it!");
-        require(claimedOrders[orderId] == true, "Order not yet claimed by buyer!");
-        require(block.number >= (orderClaimBlock[orderId] +5), "The transaction has not received enough confirmations yet!"); //supposing N = 5
-        require(settledOrders[orderId] == false, "Order already settled!");
+        Order storage ord = orders[orderId];
+
+        require(invokerMerchant[orderId] == msg.sender,              "Only merchant can settle!");
+        require(claimedOrders[orderId],                              "Order not claimed!");
+        require(!settledOrders[orderId],                              "Already settled!");
+        require(
+            block.number >= (orderClaimBlock[orderId] + 5),
+            "Waiting for finality!"
+        );
 
         address buyer = buyers[orderId];
-        escrowedethr[buyer] -= orders[orderId].cost;
-        nft.mint(buyer, orderId);
-        settledOrders[orderId] = true;
 
+         // 1) Trasferiamo l’ETH all’indirizzo del merchant
+        escrowedethr[buyer] -= ord.cost;
+        payable(msg.sender).transfer(ord.cost);
+
+        // 2) Mint del proof-of-purchase soulbound al buyer
+        //    → `mint` non prende tokenId, lo genera da sé (1, 2, 3, …)
+        nft.mint(buyer);
+
+        settledOrders[orderId] = true;
         emit OrderSettled(orderId);
     }
 }
