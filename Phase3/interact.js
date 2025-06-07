@@ -5,13 +5,15 @@ const fs = require('fs');
 const web3 = new Web3('http://127.0.0.1:7545');
 
 // Carichiamo l’ABI di MyTokenNFT (soulbound)
-const abi = JSON.parse(fs.readFileSync('MyTokenNFTAbi.json', 'utf8'));
+const abi = JSON.parse(fs.readFileSync('PurchaseAndMintAbi.json', 'utf8'));
 
 // Set contract address (use the one from deployment)
-const contractAddress = '0x6736CE9B69aeeC1FC40801658e7174eA0FE223e9';
+// Iserire qui gli indirizzi dei contratti deployati
+const purchaseAddress = '0xeA499329FC19F60f3464bb00Caff1f2323c6E4E1'; // DA aggiornare
+//const tokenAddress    = '0xf4674B01721764E716B568CF42A3E742e9128CeB';   // DA aggiornare
 
 // Creiamo l’istanza del contratto
-const contract = new web3.eth.Contract(abi, contractAddress);
+const contract = new web3.eth.Contract(abi, purchaseAddress);
 
 async function interactWithContract() {
 
@@ -22,10 +24,71 @@ async function interactWithContract() {
     const merchant = accounts[1];
     const buyer    = accounts[2];
 
-    // Listen to the event
-    contract.events.Transfer()
-    .on('data', (event) => {
-        console.log('Transferred token Event:', event.returnValues);
-    });
+    contract.events.OrderRegistered()
+        .on('data', (ev) => {
+        console.log(
+            `[EVENT] OrderRegistered → orderId: ${ev.returnValues.orderId}, shopDID: "${ev.returnValues.shopDID}", price: ${ev.returnValues.price}`
+        );
+        });
+
+    contract.events.OrderClaimed()
+        .on('data', (ev) => {
+        console.log(
+            `[EVENT] OrderClaimed → orderId: ${ev.returnValues.orderId}, buyer: ${ev.returnValues.buyer}, cost: ${ev.returnValues.cost}`
+        );
+        });
+
+    contract.events.OrderSettled()
+        .on('data', (ev) => {
+        console.log(
+            `[EVENT] OrderSettled → orderId: ${ev.returnValues.orderId}`
+        );
+        });
+
+    // ──────────────────────────────────────────────────────────────
+    // 3) Definizione dei parametri di test
+    // ──────────────────────────────────────────────────────────────
+    const orderId    = 1;
+    const shopDID    = 'did:shop:XYZ';
+    const priceEth   = '1.0';
+    const priceWei   = web3.utils.toWei(priceEth, 'ether'); // 1 ETH
+    const nowSec     = Math.floor(Date.now() / 1000);
+    const lifetime   = 3600; // 1 ora
+    const expiration = nowSec + lifetime;    
+
+    // L’orderSecret in formato bytes32
+    const orderSecret = web3.utils.padRight(
+        web3.utils.asciiToHex('super_secret'),
+        64
+    );
+    // Commitment = keccak256(orderId, orderSecret)
+    const commitment = web3.utils.soliditySha3(
+        { t: 'uint256', v: orderId },
+        { t: 'bytes32', v: orderSecret }
+    );
+
+    console.log('\nParametri ordine:');
+    console.log('  orderId     =', orderId);
+    console.log('  shopDID     =', shopDID);
+    console.log('  priceWei    =', priceWei);
+    console.log('  expiration  =', expiration);
+    console.log('  orderSecret =', orderSecret);
+    console.log('  commitment  =', commitment);
+
+    // ──────────────────────────────────────────────────────────────
+    // 4) registerOrder (merchant)
+    // ──────────────────────────────────────────────────────────────
+    console.log('\n=== 1) registerOrder da merchant ===');
+    try {
+        const txReg = await contract.methods
+        .registerOrder(orderId, shopDID, priceWei, expiration, commitment)
+        .send({ from: merchant, gas: 500000 });
+        console.log('  → registerOrder txHash:', txReg.transactionHash);
+    } catch (err) {
+        console.error('  ❌ Errore in registerOrder:', err.message);
+        process.exit(1);
+    }
 
 }
+
+interactWithContract().catch(console.error);

@@ -15,9 +15,9 @@ const crypto = require('crypto');
   // Retrieve accounts from Ganache
   const accounts = await web3.eth.getAccounts();
   const address_issuer = accounts[0];
-  const address_subject = accounts[1]; // Subject of the VC
-  const privateKey_issuer = '0xe01c26f56ea3aefcf281e5e38d67179952ea04e4c25a24e1a66e310ff082b9db';
-  const privateKey_subject = '0x4b67558fec5518047c630b2b02be537c81792c72d93b216e2264e143859d8c40'; // Subject of the VC
+  const address_subject = accounts[2]; // Subject of the VC
+  const privateKey_issuer = '0x1136254ec073b0f6c349ccb2c7d147ebc3a15d6e67626ea6f26e174427851dc2';
+  const privateKey_subject = '0xa32fc35d4e94275cfceb5cdc6a3e02e28c39696514358b066f5b632f0fc6d54e'; // Subject of the VC
   const chainId = await web3.eth.getChainId();
 
   // Create issuer DID
@@ -114,7 +114,7 @@ const crypto = require('crypto');
 
   
   // === Step 4: Verify the VP ===
-  const registryAddress = '0xBca8b9a2D349375FfeC8C7DB4Fc7e56bDC33cD65'; // <-- replace with the DID contract address
+  const registryAddress = '0xf170c4f0c751920bef24E09A9799D46E37b6Db5D'; // <-- replace with the DID contract address
   const resolver = new Resolver(ethrDidResolver.getResolver({
     networks: [{
       name: chainId,
@@ -154,7 +154,6 @@ const crypto = require('crypto');
     console.error("\n Error during VP verification:", err);
   }
 })();
-
 
 /**Quelle stampe extra (come disclosedClaims, didResolutionResult, didDocument, verificationMethod, ecc.) 
  * sono la struttura interna del risultato della funzione verifyPresentation(...), che stai stampando:
