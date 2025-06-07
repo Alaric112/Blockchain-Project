@@ -95,7 +95,7 @@ contract PurchaseAndMint {
 
         // 2) Mint del proof-of-purchase soulbound al buyer
         //    → `mint` non prende tokenId, lo genera da sé (1, 2, 3, …)
-        nft.mint(buyer);
+        nft.mint(buyer, orderId, msg.sender);
 
         settledOrders[orderId] = true;
         emit OrderSettled(orderId);

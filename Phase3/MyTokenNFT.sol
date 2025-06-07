@@ -11,9 +11,16 @@ contract MyTokenNFT {
     // ----------------------------------------------------------------------------
     // 1) Struttura dati
     // ----------------------------------------------------------------------------
+    
+    struct TokenURI{
+        uint256 orderId;
+        address merchant;
+    }
+    
     struct TokenNFT {
         uint256 tokenId;
         address owner;
+        TokenURI tokenURI;
     }
 
     uint256 private tokenHash = 1; // parte da 1, poi 2, 3, …
@@ -48,7 +55,7 @@ contract MyTokenNFT {
     /// @notice Crea un nuovo TokenNFT “soulbound” (non trasferibile) con ID = tokenHash corrente,
     ///         lo assegna a recipient e incrementa tokenHash di 1.
     /// @param recipient  L’indirizzo che riceverà il token.
-    function mint(address recipient) external {
+    function mint(address recipient, uint256 orderId, address merchant) external {
 
         require(recipient != address(0), "MyTokenNFT: mint a zero address");
         uint256 newTokenId = tokenHash;
@@ -57,7 +64,11 @@ contract MyTokenNFT {
         // Popolo la struct per tokenId e segno che esiste
         tokensId[newTokenId] = TokenNFT({
             tokenId: newTokenId,
-            owner: recipient
+            owner: recipient,
+            tokenURI: TokenURI({
+                orderId : orderId,
+                merchant : merchant
+            })
         });
 
         // Dico che recipient possiede il token newTokenId
