@@ -9,14 +9,14 @@ function readContract(contractName) {
 }
 
 // Read contracts
-const nftSource = readContract('ERC721.sol');
+const nftSource = readContract('MyTokenNFT.sol');
 const purchaseAndMintSource = readContract('PurchaseAndMint.sol');
 
 // Compiles the contracts
 const input = {
     language: 'Solidity',
     sources: {
-        'ERC721.sol': { content: nftSource },
+        'MyTokenNFT.sol': { content: nftSource },
         'PurchaseAndMint.sol': { content: purchaseAndMintSource },
     },
     settings: {
@@ -57,7 +57,7 @@ function writeOutput(fileName, contractName) {
 }
 
 // Write ABI and Bytecode files for each contract
-writeOutput('ERC721.sol', 'MyNFT');
+writeOutput('MyTokenNFT.sol', 'MyTokenNFT');
 writeOutput('PurchaseAndMint.sol', 'PurchaseAndMint');
 
 console.log('All contracts compiled successfully!');

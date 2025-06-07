@@ -5,8 +5,12 @@ const fs = require('fs');
 const web3 = new Web3('HTTP://127.0.0.1:7545');
 
 // Load ABI and Bytecode generated from the compile.js file
-const abi = JSON.parse(fs.readFileSync('PurchaseAndMint.json', 'utf8'));
-const bytecode = fs.readFileSync('PurchaseAndMint.bin', 'utf8');
+const nftAbi = JSON.parse(fs.readFileSync('MyTokenNFTAbi.json', 'utf8'));
+const nftBytecode = fs.readFileSync('MyTokenNFTBytecode.bin', 'utf8');
+
+// Load ABI and Bytecode generated from the compile.js file
+const abi = JSON.parse(fs.readFileSync('PurchaseAndMintAbi.json', 'utf8'));
+const bytecode = fs.readFileSync('PurchaseAndMintBytecode.bin', 'utf8');
 
 async function deployContract() {
     // Retrieve available accounts from Ganache
@@ -14,12 +18,19 @@ async function deployContract() {
 
     console.log(' Deploying from account:', accounts[0]);
 
+    const MyTokenNFT = new web3.eth.Contract(nftAbi);
+    const nftDeployed = await MyTokenNFT
+        .deploy({ data: '0x' + nftBytecode }) // nessun parametro in constructor
+        .send({ from: accounts[0], gas: 4000000 });
+
+    console.log(' MyTokenNFT deployed at address:', nftDeployed.options.address);
+
     // Create a new contract instance
     const contract = new web3.eth.Contract(abi);
 
     // Deploy the contract using the bytecode
     const deployedContract = await contract
-        .deploy({ data: '0x' + bytecode })
+        .deploy({ data: '0x' + bytecode, arguments: [nftDeployed.options.address] })
         .send({ from: accounts[0], gas: 4000000 });
 
     console.log(' Contract successfully deployed at address:', deployedContract.options.address);
