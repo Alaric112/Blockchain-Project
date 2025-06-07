@@ -21,9 +21,6 @@ contract MyTokenNFT {
     // Ogni tokenId unico → informazioni sul token
     mapping(uint256 => TokenNFT) public tokensId;
 
-    // Per dire se un token esiste o meno
-    mapping(uint256 => bool) private _exists;
-
     // Conta quanti token possiede ogni account
     mapping(address => uint256) public totalToken;
 
@@ -55,14 +52,13 @@ contract MyTokenNFT {
 
         require(recipient != address(0), "MyTokenNFT: mint a zero address");
         uint256 newTokenId = tokenHash;
-        require(!_exists[newTokenId], "MyTokenNFT: token gia esistente");
+        require(tokensId[newTokenId].owner == address(0), "MyTokenNFT: token gia esistente");
 
         // Popolo la struct per tokenId e segno che esiste
         tokensId[newTokenId] = TokenNFT({
             tokenId: newTokenId,
             owner: recipient
         });
-        _exists[newTokenId] = true;
 
         // Dico che recipient possiede il token newTokenId
         tokenAccounts[recipient][newTokenId] = true;
@@ -85,7 +81,7 @@ contract MyTokenNFT {
     /// @param tokenId  L’identificativo del token (sequenziale, assegnato internamente).
     /// @return address Indirizzo che possiede quel token.
     function ownerOf(uint256 tokenId) public view returns (address) {
-        require(_exists[tokenId], "MyTokenNFT: token inesistente");
+        require(tokensId[tokenId].owner != address(0), "MyTokenNFT: token inesistente");
         return tokensId[tokenId].owner;
     }
 
@@ -94,7 +90,7 @@ contract MyTokenNFT {
     /// @param tokenId  L’identificativo del token.
     /// @return bool    Se il token è già stato creato.
     function exists(uint256 tokenId) public view returns (bool) {
-        return _exists[tokenId];
+        return tokensId[tokenId].owner != address(0);
     }
 
     /// @notice Ritorna quanti token ha in totale l’indirizzo `owner`.
