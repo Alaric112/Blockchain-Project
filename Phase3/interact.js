@@ -9,7 +9,7 @@ const abi = JSON.parse(fs.readFileSync('PurchaseAndMintAbi.json', 'utf8'));
 
 // Set contract address (use the one from deployment)
 // Iserire qui gli indirizzi dei contratti deployati
-const purchaseAddress = '0xeA499329FC19F60f3464bb00Caff1f2323c6E4E1'; // DA aggiornare
+const purchaseAddress = '0xaf6554ad5B8B757D5398c1Cb5B5973cAA19386BB'; // DA aggiornare
 //const tokenAddress    = '0xf4674B01721764E716B568CF42A3E742e9128CeB';   // DA aggiornare
 
 // Creiamo l’istanza del contratto
@@ -48,9 +48,9 @@ async function interactWithContract() {
     // ──────────────────────────────────────────────────────────────
     // 3) Definizione dei parametri di test
     // ──────────────────────────────────────────────────────────────
-    const orderId    = 1;
+    const orderId    = 17;
     const shopDID    = 'did:shop:XYZ';
-    const priceEth   = '1.0';
+    const priceEth   = '0.1';
     const priceWei   = web3.utils.toWei(priceEth, 'ether'); // 1 ETH
     const nowSec     = Math.floor(Date.now() / 1000);
     const lifetime   = 3600; // 1 ora
@@ -89,6 +89,17 @@ async function interactWithContract() {
         process.exit(1);
     }
 
+    // ──────────────────────────────────────────────────────────────
+    // 5) claimOrder (buyer)
+    // ──────────────────────────────────────────────────────────────
+    console.log('\n=== 2) claimOrder da buyer ===');
+
+    await contract.methods.claimOrder(orderId, orderSecret).send({
+    from: buyer,
+    value: priceWei,
+    gas: 200000,               // Aggiungi un gas limit generoso (ad es. 300,000)
+    });
+  
 }
 
 interactWithContract().catch(console.error);

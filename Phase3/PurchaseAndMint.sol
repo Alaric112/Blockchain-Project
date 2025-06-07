@@ -54,20 +54,20 @@ contract PurchaseAndMint {
     // =======================================================
     // 2) claimOrder: il buyer rivelare l’orderSecret e paga
     // =======================================================
-    function claimOrder(uint256 orderId, bytes32 orderSecret, uint256 payAmount) public {
+    function claimOrder(uint256 orderId, bytes32 orderSecret) public payable {
 
         require(orders[orderId].expirationDate != 0, "Order don't exists!");
         require(block.timestamp <= orders[orderId].expirationDate, "Window to claim the order has expired!");
         require(keccak256(abi.encodePacked(orderId, orderSecret)) == orders[orderId].commitment, "Only knower of secret can claims the order!");
-        require(claimedOrders[orderId] == false, "Order already claimed!");
-        require(orders[orderId].cost == payAmount, "Payment amount does not match the cost of the product!");
+        require(!claimedOrders[orderId], "Order already claimed!");
+        require(orders[orderId].cost == msg.value, "Incorrect payment amount!");
 
         claimedOrders[orderId]= true;
         buyers[orderId] = msg.sender;
-        escrowedethr[msg.sender] = payAmount;
+        escrowedethr[msg.sender] = msg.value;
         orderClaimBlock[orderId] = block.number;
 
-        emit OrderClaimed(orderId, msg.sender, payAmount);
+        emit OrderClaimed(orderId, msg.sender, msg.value);
     }
 
     // =======================================================
