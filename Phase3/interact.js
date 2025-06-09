@@ -6,14 +6,16 @@ const web3 = new Web3('http://127.0.0.1:7545');
 
 // Carichiamo l’ABI di MyTokenNFT (soulbound)
 const abi = JSON.parse(fs.readFileSync('PurchaseAndMintAbi.json', 'utf8'));
+const tokenAbi = JSON.parse(fs.readFileSync("MyTokenNFTAbi.json", "utf8"));
 
 // Set contract address (use the one from deployment)
 // Iserire qui gli indirizzi dei contratti deployati
-const purchaseAddress = '0xD8E55ef856bfAC47ff7BB43128b7d2F288648f79'; // DA aggiornare
-//const tokenAddress    = '0xf4674B01721764E716B568CF42A3E742e9128CeB';   // DA aggiornare
+const tokenAddress    = '0x555Ce768EA40db5B840Fe471819dDE744057e9a4'; // <--------------- DA aggiornare
+const purchaseAddress = '0x7eBc3108ecafF8398FBD175A2b0aDeA6758B66b6'; // <--------------- DA aggiornare
 
 // Creiamo l’istanza del contratto
 const contract = new web3.eth.Contract(abi, purchaseAddress);
+const nftContract = new web3.eth.Contract(tokenAbi, tokenAddress);
 
 async function interactWithContract() {
 
@@ -254,6 +256,30 @@ async function interactWithContract() {
     const merchantBalanceWei = await web3.eth.getBalance(merchant);
     const merchantBalanceEth = web3.utils.fromWei(merchantBalanceWei, 'ether');
     console.log(`Saldo totale merchant (${merchant}): ${merchantBalanceEth} ETH`);
+
+    // ──────────────────────────────────────────────────────────────
+    // Verifichiamo che il buyer abbia ricevuto il suo NFT “proof-of-purchase”
+    // ──────────────────────────────────────────────────────────────
+
+    // Controlla se esiste un NFT con tokenId = orderId2
+    const exists = await nftContract.methods.exists(1).call();
+    console.log(`\n🔍 NFT.exists(${1}) =`, exists);
+
+    if (exists) {
+      // Verifica il proprietario
+      const owner = await nftContract.methods.ownerOf(1).call();
+      console.log(`🔍 NFT.ownerOf(${1}) =`, owner);
+    }
+
+    // Controlla quanti NFT possiede il buyer
+    const balanceBuyer = await nftContract.methods.balanceOf(buyer).call();
+    console.log(
+      `🔍 NFT.balanceOf(buyer = ${buyer}) =`,
+      balanceBuyer,
+      "tokeni"
+    );
+
+    console.log("\n=== TEST COMPLETATO ===");
 
 }
 
