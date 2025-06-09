@@ -10,6 +10,7 @@ contract IpfsStorage {
         string ipfsCID;       
         address shop;      
         uint256 timestamp;
+        uint256 netScore;
     }
 
     MyTokenNFT public nft;
@@ -18,6 +19,8 @@ contract IpfsStorage {
     mapping(address => mapping(address => bool)) private reviewerMerchantBinding;    //submitter => submittedShop
 
     event StoredCID(string cid, address shop);
+    event ReviewModified(string cid, address shop);
+    event ReviewDeleted(string cid);
 
     constructor(address nftAddress) {
         nft = MyTokenNFT(nftAddress);
@@ -38,7 +41,8 @@ contract IpfsStorage {
             holder : submitter,
             ipfsCID : _cid,
             shop : submittedShop,
-            timestamp : block.timestamp
+            timestamp : block.timestamp,
+            netScore : 0
         });
 
         reviewerMerchantBinding[submitter][submittedShop] = true;
@@ -49,5 +53,32 @@ contract IpfsStorage {
     // Restituisce il CID memorizzato
     function getCID(uint256 nftId) public view returns (string memory) {
         return submittedReviews[nftId].ipfsCID;
+    }
+
+    function modifyReview(uint256 nftId, string memory newCID) public {
+
+        require(nft.exists(nftId), "Token does not exists!");
+        require(nft.ownerOf(nftId) == msg.sender, "User is not true holder of the NFT!");
+
+        string memory oldCID = submittedReviews[nftId].ipfsCID;
+        submittedReviews[nftId].ipfsCID = newCID;
+        submittedReviews[nftId].netScore = 0;
+
+        emit ReviewModified(oldCID, submittedReviews[nftId].shop);
+    }
+
+    function deleteReview(uint256 nftId) public {
+
+        require(nft.exists(nftId), "Token does not exists!");
+        require(nft.ownerOf(nftId) == msg.sender, "User is not true holder of the NFT!");  
+
+        string memory oldCID = submittedReviews[nftId].ipfsCID;
+        submittedReviews[nftId].ipfsCID = "";
+        submittedReviews[nftId].shop = address(0);
+        submittedReviews[nftId].timestamp = 0;
+        submittedReviews[nftId].netScore = 0;
+
+        emit ReviewDeleted(oldCID);
+
     }
 }

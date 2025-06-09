@@ -8,7 +8,7 @@ const FormData = require('form-data');
 const web3 = new Web3('HTTP://127.0.0.1:7545');
 const contractAbi = JSON.parse(fs.readFileSync('IpfsStorageAbi.json', 'utf8'));
 
-const contractAddress = '0x72cE70637bcC8963254D5d6f8719534E7caE52fB';  // ← change here
+const contractAddress = '0x22d97fa4cdb4aBa905B4a09CbC1269753668776f';  // ← change here
 
 const contract = new web3.eth.Contract(contractAbi, contractAddress);
 
@@ -18,6 +18,20 @@ const contract = new web3.eth.Contract(contractAbi, contractAddress);
             `[EVENT] Review registered → CID: ${ev.returnValues.cid}, shop: "${ev.returnValues.shop}"`
         );
         });
+
+    contract.events.ReviewModified()
+        .on('data', (ev) => {
+        console.log(
+            `[EVENT] Review modified → CID: ${ev.returnValues.cid}, shop: "${ev.returnValues.shop}"`
+        );
+        });
+
+    contract.events.ReviewDeleted()
+        .on('data', (ev) => {
+        console.log(
+            `[EVENT] Review deleted → CID: ${ev.returnValues.cid}"`
+        );
+        });   
 
 // 2) File to upload
 const filePath = path.join(__dirname, 'review.txt');
@@ -102,7 +116,53 @@ async function interact() {
     await downloadFromIPFS(retrievedCID, outputPath);
     console.log(' File downloaded to:', outputPath);
 
-  } catch (err) {
+  
+  
+  // 5. Modifica la review
+    const new_filePath = path.join(__dirname, 'modifiedreview.txt');
+    console.log(' Uploading to IPFS modifed review…');
+    const new_cid = await uploadToIPFS(new_filePath);
+    console.log(' CID obtained:', new_cid);
+
+    console.log(' Modifying review...');
+    try {
+    await contract.methods.modifyReview(1, new_cid).send({ from: reviewer, gas: 300000 });
+    console.log(' Review successfully modified.');
+    } catch (err) {
+      console.error('  ❌ Error modifying review:', err);
+      process.exit(1);
+    }
+
+    // 6. Recupera il nuovo CID da blockchain
+    console.log(' Retrieving CID from blockchain...');
+    try {
+    retrievedCID = await contract.methods.getCID(1).call();
+    console.log(' CID retrieved:', retrievedCID);
+    } catch (err) {
+      console.error('  ❌ Error retrieving CID from blockchain:', err.message);
+      process.exit(1);
+    }
+
+    // 7. Scarica la review modificata da IPFS
+    const new_outputPath = path.join(__dirname, 'modifiedfromipfs.txt');
+    console.log(' Downloading from IPFS…');
+    await downloadFromIPFS(retrievedCID, new_outputPath);
+    console.log(' File downloaded to:', outputPath);
+
+  
+
+    // 8. Elimina la review
+
+    console.log(' Deleting review...');
+    try {
+    await contract.methods.deleteReview(1).send({ from: reviewer, gas: 300000 });
+    console.log(' Review successfully deleted.');
+    } catch (err) {
+      console.error('  ❌ Error deleting review:', err);
+      process.exit(1);
+    }
+  
+  }catch (err) {
     console.error('Errore durante l\'esecuzione:', err);
   }
 }
