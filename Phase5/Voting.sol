@@ -51,14 +51,16 @@ contract Voting {
         // If the user is changing their vote:
         if (previousVote != 0) {
             // Subtract the previous weighted vote
-            review.netScore -= int256(previousVote) * weight;
+            review.netScore -= int256(previousVote) * int256(uint256(weight));
+
+
         }
 
         // Record the new vote
         review.voterVotes[msg.sender] = voteValue;
 
         // Add the new weighted vote
-        review.netScore += int256(voteValue) * weight;
+        review.netScore += int256(voteValue) * int256(uint256(weight));
 
         emit VoteCast(msg.sender, reviewId, voteValue, weight, review.netScore);
     }
