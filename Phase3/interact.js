@@ -261,7 +261,7 @@ async function interactWithContract() {
     // Verifichiamo che il buyer abbia ricevuto il suo NFT “proof-of-purchase”
     // ──────────────────────────────────────────────────────────────
 
-    // Controlla se esiste un NFT con tokenId = orderId2
+    // Controlla se esiste un NFT
     const exists = await nftContract.methods.exists(1).call();
     console.log(`\n🔍 NFT.exists(${1}) =`, exists);
 
