@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.0;
 
 /**
  * @title Interface for RewardToken (ERC20)
@@ -10,6 +10,7 @@ interface RewardToken {
 
 /**
  * @title Voting & Reward System (light version with admin)
+ *
  */
 contract VotingAndRewards {
     struct Review {
@@ -81,8 +82,6 @@ contract VotingAndRewards {
 
     // Queste cose submitReview modifyReview andrebbero fatte nella fase 4 con reset del netscore ecc.
 
-
-
     /**
      * Submit review
      */
@@ -101,6 +100,7 @@ contract VotingAndRewards {
 
         emit ReviewSubmitted(reviewId, msg.sender);
     }
+
 
     /**
      * Vote review
@@ -166,17 +166,25 @@ contract VotingAndRewards {
      * Get visibility score
      */
     function getVisibilityScore(uint256 reviewId) external view returns (uint256) {
-        Review storage r = reviews[reviewId];
-        require(!r.revoked, "Review revoked");
+    Review storage r = reviews[reviewId];
+    require(!r.revoked, "Review revoked");
 
-        uint256 ageInMonths = currentMonth - reviewPublishedMonth[reviewId];
+    uint256 ageInMonths = currentMonth - reviewPublishedMonth[reviewId];
 
-        uint256 denominator = (ageInMonths + 1) ** alpha / (10 ** alpha);
+    // Simplified denominator to avoid overflow
+    // You can tune this formula as you like, here it's linear decay
+    uint256 denom = (ageInMonths + 1);
 
-        uint256 visibilityScore = uint256(int256(r.netScore)) * (10 ** alpha) / denominator;
+    // Protect against negative netScore (negative scores → 0 visibility)
+    int256 netScoreInt = r.netScore;
+    uint256 netScoreAbs = netScoreInt >= 0 ? uint256(netScoreInt) : 0;
 
-        return visibilityScore;
-    }
+    // Compute visibility score with a scaling factor (1e18 for precision)
+    uint256 visibilityScore = (netScoreAbs * 1e18) / denom;
+
+    return visibilityScore;
+}
+
 
     /**
      *
@@ -186,59 +194,67 @@ contract VotingAndRewards {
      */
     
     function distributeRewards() external onlyAdmin {
+    currentMonth++;
 
-        currentMonth++; // ogni volta che la funzione viene chiamata, incrementiamo il mese corrente
+    uint256 totalWeight = 0;
+    uint256[] memory weights = new uint256[](nextReviewId);
 
-        uint256 totalWeight = 0;
+    // First pass: compute total W(j)
+    for (uint256 i = 0; i < nextReviewId; i++) {
+        Review storage r = reviews[i];
+        if (r.revoked || r.netScore <= 0) continue;
 
-        uint256[] memory weights = new uint256[](nextReviewId);
+        uint256 j = currentMonth - reviewPublishedMonth[i];
+        uint256 w = gaussianWeight(j);
 
-
-        // First pass: compute total W(j)
-        for (uint256 i = 0; i < nextReviewId; i++) {
-            Review storage r = reviews[i];
-            if (r.revoked || r.netScore <= 0) continue;
-            
-
-            uint256 j = currentMonth - reviewPublishedMonth[i]; // months since published
-            uint256 w = gaussianWeight(j);  // compute reward based on Gaussian function
-
-            weights[i] = w;
-            totalWeight += w;
-
+        // Protect against potential weight overflow (clamp max value if needed)
+        if (w > 1e18) {
+            w = 1e18; // max weight cap
         }
 
-        // Second pass: distribute rewards
-        for (uint256 i = 0; i < nextReviewId; i++) {
-            if (weights[i] == 0) continue;
-
-            uint256 tokens = (monthlyRewardPool * weights[i]) / totalWeight;
-            reviewRewards[i][currentMonth] = tokens;
-            
-
-            // Mint tokens to author
-            rewardToken.mint(reviews[i].author, tokens);
-        }
-
-        emit RewardsDistributed(currentMonth);
+        weights[i] = w;
+        totalWeight += w;
     }
+
+    // Protect: if totalWeight == 0, skip distribution to avoid division by zero
+    if (totalWeight == 0) {
+        emit RewardsDistributed(currentMonth);
+        return;
+    }
+
+    // Second pass: distribute rewards
+    for (uint256 i = 0; i < nextReviewId; i++) {
+        if (weights[i] == 0) continue;
+
+        uint256 tokens = (monthlyRewardPool * weights[i]) / totalWeight;
+        reviewRewards[i][currentMonth] = tokens;
+
+        // Skip minting 0 tokens to avoid ERC20 revert
+        if (tokens == 0) continue;
+
+        rewardToken.mint(reviews[i].author, tokens);
+    }
+
+    emit RewardsDistributed(currentMonth);
+}
+
+
 
     /**
      * Gaussian weight function wi(j)
      */
     function gaussianWeight(uint256 j) public view returns (uint256) {
-        int256 num = int256(j) - int256(mu);
-        int256 denom = int256(2 * sigma * sigma);
+    int256 num = int256(j) - int256(mu);
 
-        int256 exponent = -((num * num) * 1e18) / denom;
+    // Simplified placeholder for exp approximation (no real exp)
 
-        // Simplified placeholder for exp approximation
-        if (j == mu) {
-            return 1e18;
-        } else {
-            return uint256(1e18 / (uint256((num * num) + 1)));
-        }
+    if (j == mu) {
+        return 1e18; // massimo peso
+    } else {
+        return uint256(1e18 / (uint256((num * num) + 1)));
     }
+}
+
 
     /**
      * Admin set params

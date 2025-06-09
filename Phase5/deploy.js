@@ -4,40 +4,74 @@ const fs = require('fs');
 // Connessione alla tua rete (Ganache in locale ad esempio)
 const web3 = new Web3('HTTP://127.0.0.1:7545');
 
-// Carica ABI e Bytecode generati dal compile.js
-const abi = JSON.parse(fs.readFileSync('VotingAbi.json', 'utf8'));
-const bytecode = fs.readFileSync('VotingBytecode.bin', 'utf8');
+async function deployContracts() {
+    try {
+        // Recupera gli account disponibili
+        const accounts = await web3.eth.getAccounts();
+        console.log('Deploying from account:', accounts[0]);
 
-async function deployContract() {
-    // Recupera gli account disponibili
-    const accounts = await web3.eth.getAccounts();
+        // ===== DEPLOY REWARD TOKEN FIRST =====
+        const rewardTokenAbi = JSON.parse(fs.readFileSync('RewardTokenAbi.json', 'utf8'));
+        const rewardTokenBytecode = fs.readFileSync('RewardTokenBytecode.bin', 'utf8');
 
-    console.log(' Deploying from account:', accounts[0]);
+        console.log('\n=== Deploying RewardToken ===');
+        const rewardTokenContract = new web3.eth.Contract(rewardTokenAbi);
+        
+        const deployedRewardToken = await rewardTokenContract
+            .deploy({ 
+                data: '0x' + rewardTokenBytecode, 
+                arguments: [1000000] // Initial supply: 1,000,000 tokens
+            })
+            .send({ 
+                from: accounts[0], 
+                gas: 2000000, 
+                gasPrice: '30000000000' 
+            });
 
-    // Indirizzo del contratto ProofOfPurchaseNFT:
-    // → Se hai già deployato il contratto NFT, scrivi qui il vero indirizzo
+        console.log('RewardToken deployed at:', deployedRewardToken.options.address);
 
+        // ===== DEPLOY VOTING AND REWARDS CONTRACT =====
+        const votingAbi = JSON.parse(fs.readFileSync('VotingAndRewardsAbi.json', 'utf8'));
+        const votingBytecode = fs.readFileSync('VotingAndRewardsBytecode.bin', 'utf8');
 
-    // → Per test puoi anche usare un account a caso di Ganache, ad esempio:
-    const proofOfPurchaseNFTAddress = '0x382EbD9662C8b920E2097D7C7Fc9beabBE68DEeA';
+        console.log('\n=== Deploying VotingAndRewards ===');
+        const votingContract = new web3.eth.Contract(votingAbi);
 
-    // Crea l'istanza del contratto
-    const contract = new web3.eth.Contract(abi);
+        const deployedVotingContract = await votingContract
+            .deploy({ 
+                data: '0x' + votingBytecode, 
+                arguments: [deployedRewardToken.options.address] // Address of the RewardToken
+            })
+            .send({ 
+                from: accounts[0], 
+                gas: 4000000, 
+                gasPrice: '30000000000' 
+            });
 
-    // Fai il deploy del contratto con l'argomento richiesto
-    const deployedContract = await contract
-        .deploy({ 
-            data: '0x' + bytecode, 
-            arguments: [proofOfPurchaseNFTAddress] // IMPORTANTE: qui serve l'argomento del constructor
-        })
-        .send({ 
-            from: accounts[0], 
-            gas: 3000000, 
-            gasPrice: '30000000000' 
-        });
+        console.log('VotingAndRewards deployed at:', deployedVotingContract.options.address);
 
-    console.log(' Contract successfully deployed at address:', deployedContract.options.address);
+        // ===== SAVE DEPLOYMENT INFO =====
+        const deploymentInfo = {
+            rewardToken: {
+                address: deployedRewardToken.options.address,
+                deployer: accounts[0]
+            },
+            votingAndRewards: {
+                address: deployedVotingContract.options.address,
+                deployer: accounts[0]
+            },
+            timestamp: new Date().toISOString()
+        };
+
+        fs.writeFileSync('deployment.json', JSON.stringify(deploymentInfo, null, 2));
+        console.log('\n=== Deployment Complete ===');
+        console.log('Deployment info saved to deployment.json');
+        
+    } catch (error) {
+        console.error('Deployment failed:', error);
+        process.exit(1);
+    }
 }
 
-// Esegui la funzione di deploy e cattura eventuali errori
-deployContract().catch(console.error);
+// Esegui la funzione di deploy
+deployContracts();
