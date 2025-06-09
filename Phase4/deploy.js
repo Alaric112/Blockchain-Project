@@ -1,45 +1,40 @@
-const fs = require('fs-extra');
-const solc = require('solc');
 const { Web3 } = require('web3');
+const fs = require('fs');
 
-const web3 = new Web3('http://127.0.0.1:7545'); // Ganache
+// Correct connection to the local Ganache instance (verify the Ganache port!)
+const web3 = new Web3('HTTP://127.0.0.1:7545');
 
-const source = fs.readFileSync('IpfsStorage.sol', 'utf8');
+// Load ABI and Bytecode generated from the compile.js file
+const nftAbi = JSON.parse(fs.readFileSync('MyTokenNFTAbi.json', 'utf8'));
+const nftBytecode = fs.readFileSync('MyTokenNFTBytecode.bin', 'utf8');
 
-// Compilazione
-const input = {
-  language: 'Solidity',
-  sources: {
-    'IpfsStorage.sol': { content: source },
-  },
-  settings: {
-    outputSelection: {
-      '*': {
-        '*': ['*']
-      }
-    }
-  }
-};
+// Load ABI and Bytecode generated from the compile.js file
+const abi = JSON.parse(fs.readFileSync('IpfsStorageAbi.json', 'utf8'));
+const bytecode = fs.readFileSync('IpfsStorageBytecode.bin', 'utf8');
 
-const output = JSON.parse(solc.compile(JSON.stringify(input)));
-const contractFile = output.contracts['IpfsStorage.sol']['IpfsStorage'];
+async function deployContract() {
+    // Retrieve available accounts from Ganache
+    const accounts = await web3.eth.getAccounts();
 
-const abi = contractFile.abi;
-const bytecode = contractFile.evm.bytecode.object;
+    console.log(' Deploying from account:', accounts[0]);
 
-async function deploy() {
-  const accounts = await web3.eth.getAccounts();
-  console.log('Deploying from account:', accounts[0]);
+    const MyTokenNFT = new web3.eth.Contract(nftAbi);
+    const nftDeployed = await MyTokenNFT
+        .deploy({ data: '0x' + nftBytecode }) // nessun parametro in constructor
+        .send({ from: accounts[0], gas: 5000000 });
 
-  const contract = new web3.eth.Contract(abi);
+    console.log(' MyTokenNFT deployed at address:', nftDeployed.options.address);
 
-  const deployed = await contract.deploy({ data: '0x' + bytecode })
-    .send({ from: accounts[0], gas: 1500000 });
+    // Create a new contract instance
+    const contract = new web3.eth.Contract(abi);
 
-  console.log('Contract deployed at:', deployed.options.address);
+    // Deploy the contract using the bytecode
+    const deployedContract = await contract
+        .deploy({ data: '0x' + bytecode, arguments: [nftDeployed.options.address] })
+        .send({ from: accounts[0], gas: 5000000 });
 
-  // Salva ABI per uso futuro
-  fs.outputJsonSync('IpfsStorageAbi.json', abi);
+    console.log(' Contract successfully deployed at address:', deployedContract.options.address);
 }
 
-deploy();
+// Call the deploy function and handle errors
+deployContract().catch(console.error);
