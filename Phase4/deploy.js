@@ -5,8 +5,7 @@ const fs = require('fs');
 const web3 = new Web3('HTTP://127.0.0.1:7545');
 
 // Load ABI and Bytecode generated from the compile.js file
-const nftAbi = JSON.parse(fs.readFileSync('MyTokenNFTAbi.json', 'utf8'));
-const nftBytecode = fs.readFileSync('MyTokenNFTBytecode.bin', 'utf8');
+const nftAddress = '0xd39E70A7C40583a9883a3B2792223e2B0F444D1D'; // indirizzo del contratto MyTokenNFT già deployato in Phase3
 
 // Load ABI and Bytecode generated from the compile.js file
 const abi = JSON.parse(fs.readFileSync('IpfsStorageAbi.json', 'utf8'));
@@ -18,19 +17,12 @@ async function deployContract() {
 
     console.log(' Deploying from account:', accounts[0]);
 
-    const MyTokenNFT = new web3.eth.Contract(nftAbi);
-    const nftDeployed = await MyTokenNFT
-        .deploy({ data: '0x' + nftBytecode }) // nessun parametro in constructor
-        .send({ from: accounts[0], gas: 5000000 });
-
-    console.log(' MyTokenNFT deployed at address:', nftDeployed.options.address);
-
     // Create a new contract instance
     const contract = new web3.eth.Contract(abi);
 
     // Deploy the contract using the bytecode
     const deployedContract = await contract
-        .deploy({ data: '0x' + bytecode, arguments: [nftDeployed.options.address] })
+        .deploy({ data: '0x' + bytecode, arguments: [nftAddress] })
         .send({ from: accounts[0], gas: 5000000 });
 
     console.log(' Contract successfully deployed at address:', deployedContract.options.address);
