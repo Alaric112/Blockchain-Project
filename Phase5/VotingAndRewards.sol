@@ -11,7 +11,7 @@ interface RewardToken {
 /**
  * @title Voting & Reward System (light version with admin)
  */
-contract VotingRewardSystem {
+contract VotingAndRewards {
     struct Review {
         address author;
         string content;
