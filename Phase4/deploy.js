@@ -5,7 +5,7 @@ const fs = require('fs');
 const web3 = new Web3('HTTP://127.0.0.1:7545');
 
 // Load ABI and Bytecode generated from the compile.js file
-const nftAddress = '0xd39E70A7C40583a9883a3B2792223e2B0F444D1D'; // indirizzo del contratto MyTokenNFT già deployato in Phase3
+const nftAddress = '0x8738EB3aBbcfCb926B91d461506d71381054a941'; // indirizzo del contratto MyTokenNFT già deployato in Phase3
 
 // Load ABI and Bytecode generated from the compile.js file
 const abi = JSON.parse(fs.readFileSync('IpfsStorageAbi.json', 'utf8'));
