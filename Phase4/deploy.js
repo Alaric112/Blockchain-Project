@@ -5,6 +5,7 @@ const fs = require('fs');
 const web3 = new Web3('HTTP://127.0.0.1:7545');
 
 // Load ABI and Bytecode generated from the compile.js file
+
 const nftAddress = '0x7903D94485b757e483F28B1EA995D5Bc4998391B'; // indirizzo del contratto MyTokenNFT già deployato in Phase3
 
 // Load ABI and Bytecode generated from the compile.js file
