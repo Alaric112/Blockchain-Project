@@ -10,8 +10,8 @@ const tokenAbi = JSON.parse(fs.readFileSync("MyTokenNFTAbi.json", "utf8"));
 
 // Set contract address (use the one from deployment)
 // Iserire qui gli indirizzi dei contratti deployati
-const tokenAddress    = '0x8738EB3aBbcfCb926B91d461506d71381054a941'; // <--------------- DA aggiornare
-const purchaseAddress = '0x89dEB76339Fe9ee80f7EF17e8bA0a9bAe46a58b9'; // <--------------- DA aggiornare
+const tokenAddress    = '0xd4DbCF9a081BCf6ec330e7fECD1A59f5A3ECf169'; // <--------------- DA aggiornare
+const purchaseAddress = '0x924a34847e89cD0cE84631240bdD936983EE5980'; // <--------------- DA aggiornare
 
 // Creiamo l’istanza del contratto
 const contract = new web3.eth.Contract(abi, purchaseAddress);

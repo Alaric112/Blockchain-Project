@@ -16,6 +16,7 @@ const crypto = require('crypto');
   const accounts = await web3.eth.getAccounts();
   const address_issuer = accounts[0];
   const address_subject = accounts[2]; // Subject of the VC
+  const registryAddress = '0xf170c4f0c751920bef24E09A9799D46E37b6Db5D'; // <-- replace with the DID contract address
   const privateKey_issuer = '0x1136254ec073b0f6c349ccb2c7d147ebc3a15d6e67626ea6f26e174427851dc2';
   const privateKey_subject = '0xa32fc35d4e94275cfceb5cdc6a3e02e28c39696514358b066f5b632f0fc6d54e'; // Subject of the VC
   const chainId = await web3.eth.getChainId();
@@ -114,7 +115,6 @@ const crypto = require('crypto');
 
   
   // === Step 4: Verify the VP ===
-  const registryAddress = '0xf170c4f0c751920bef24E09A9799D46E37b6Db5D'; // <-- replace with the DID contract address
   const resolver = new Resolver(ethrDidResolver.getResolver({
     networks: [{
       name: chainId,
