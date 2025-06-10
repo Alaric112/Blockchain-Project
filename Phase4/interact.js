@@ -8,7 +8,7 @@ const FormData = require('form-data');
 const web3 = new Web3('HTTP://127.0.0.1:7545');
 const contractAbi = JSON.parse(fs.readFileSync('IpfsStorageAbi.json', 'utf8'));
 
-const contractAddress = '0xd8E874DE5B0809D88B106B6Af7eE914c2efaaD19';  // ← change here
+const contractAddress = '0xea261BB30da16d46504b73f9d1423f89f9aBF4ca';  // ← change here
 
 const contract = new web3.eth.Contract(contractAbi, contractAddress);
 
