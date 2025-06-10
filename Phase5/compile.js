@@ -8,15 +8,15 @@ function readContract(contractName) {
     return fs.readFileSync(contractPath, 'utf8');
 }
 
-const sourceCode = readContract('Voting.sol'); 
-const RewardTokenSource = readContract('RewardToken.sol');
+const votingSource = readContract('VotingAndRewards.sol'); 
+const rewardTokenSource = readContract('RewardToken.sol');
 
 // Compiles the contract
 const input = {
     language: 'Solidity',
     sources: {
-        'Voting.sol': { content: sourceCode },
-        'RewardToken.sol' : { content: RewardTokenSource },
+        'VotingAndRewards.sol': { content: votingSource },
+        'RewardToken.sol': { content: rewardTokenSource },
     },
     settings: {
         outputSelection: {
@@ -33,16 +33,23 @@ if (compiledContracts.errors) {
     compiledContracts.errors.forEach(err => {
         console.error(err.formattedMessage);
     });
-    throw new Error('Compilation failed');
+    
+    // Check if there are fatal errors
+    const fatalErrors = compiledContracts.errors.filter(err => err.severity === 'error');
+    if (fatalErrors.length > 0) {
+        throw new Error('Compilation failed with errors');
+    }
 }
 
 console.log('Contracts keys:', Object.keys(compiledContracts.contracts));
+
 // Function to write ABI and Bytecode
 function writeOutput(fileName, contractName) {
     const contractOutput = compiledContracts.contracts[fileName][contractName];
 
     if (!contractOutput) {
         console.error(`Error: Contract ${contractName} not found in ${fileName}.`);
+        console.log('Available contracts:', Object.keys(compiledContracts.contracts[fileName] || {}));
         process.exit(1);
     }
 
@@ -57,6 +64,6 @@ function writeOutput(fileName, contractName) {
 
 // Write ABI and Bytecode files for each contract
 writeOutput('RewardToken.sol', 'RewardToken');
-writeOutput('Voting.sol', 'Voting');
+writeOutput('VotingAndRewards.sol', 'VotingAndRewards');
 
 console.log('All contracts compiled successfully!');
