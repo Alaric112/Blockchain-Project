@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-/**
- * @title Interface for RewardToken (ERC20)
- */
-interface RewardToken {
-    function mint(address to, uint256 amount) external;
-}
+import "./RewardToken.sol";
 
 /**
  * @title Voting & Reward System (light version with admin)
@@ -50,6 +45,7 @@ contract VotingAndRewards {
     event ReviewModified(uint256 reviewId);
     event Voted(uint256 reviewId, address voter, int8 voteWeight);
     event RewardsDistributed(uint256 month);
+
 
     constructor(address _rewardToken) {
         rewardToken = RewardToken(_rewardToken);
@@ -193,8 +189,16 @@ contract VotingAndRewards {
      della review. Ogni mese mintiamo nuovi token e li distribuiamo tra le review meritevoli.
      */
     
-    function distributeRewards() external onlyAdmin {
+   function distributeRewards() external onlyAdmin {
     currentMonth++;
+
+    uint256 rewardPool = rewardToken.balanceOf(address(this)); // TESORERIA → usa i token che il contratto possiede
+
+    // Protect: if rewardPool == 0, skip distribution
+    if (rewardPool == 0) {
+        emit RewardsDistributed(currentMonth);
+        return;
+    }
 
     uint256 totalWeight = 0;
     uint256[] memory weights = new uint256[](nextReviewId);
@@ -214,6 +218,7 @@ contract VotingAndRewards {
 
         weights[i] = w;
         totalWeight += w;
+
     }
 
     // Protect: if totalWeight == 0, skip distribution to avoid division by zero
@@ -226,18 +231,17 @@ contract VotingAndRewards {
     for (uint256 i = 0; i < nextReviewId; i++) {
         if (weights[i] == 0) continue;
 
-        uint256 tokens = (monthlyRewardPool * weights[i]) / totalWeight;
+        uint256 tokens = (rewardPool * weights[i]) / totalWeight;
         reviewRewards[i][currentMonth] = tokens;
 
-        // Skip minting 0 tokens to avoid ERC20 revert
+        // Skip transferring 0 tokens to avoid ERC20 revert
         if (tokens == 0) continue;
 
-        rewardToken.mint(reviews[i].author, tokens);
+        rewardToken.transfer(reviews[i].author, tokens); // QUI il transfer effettivo (tesoreria)
     }
 
     emit RewardsDistributed(currentMonth);
 }
-
 
 
     /**
@@ -254,7 +258,6 @@ contract VotingAndRewards {
         return uint256(1e18 / (uint256((num * num) + 1)));
     }
 }
-
 
     /**
      * Admin set params
