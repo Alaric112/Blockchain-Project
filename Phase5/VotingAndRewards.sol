@@ -191,7 +191,7 @@ contract VotingAndRewards {
 
 
     /**
-     * Distribute rewards to top K reviewers only
+     * Distribute rewards to top K reviewers only using min-heap optimization
      */
     function distributeRewards() external onlyAdmin {
         currentMonth++;
@@ -204,11 +204,11 @@ contract VotingAndRewards {
             return;
         }
 
-        // Create array to store all eligible reviews with their weights
-        ReviewWeight[] memory eligibleReviews = new ReviewWeight[](nextnftId);
-        uint256 eligibleCount = 0;
+        // Use min-heap to efficiently find top K reviews
+        ReviewWeight[] memory topKReviews = new ReviewWeight[](topK);
+        uint256 heapSize = 0;
 
-        // First pass: collect all eligible reviews and their weights
+        // Process all reviews using heap to maintain top K
         for (uint256 i = 0; i < nextnftId; i++) {
             Review storage r = reviews[i];
             if (r.revoked || r.netScore <= 0) continue;
@@ -221,37 +221,30 @@ contract VotingAndRewards {
                 w = 1e18; // max weight cap
             }
 
-            if (w > 0) {
-                eligibleReviews[eligibleCount] = ReviewWeight(i, w);
-                eligibleCount++;
+            if (w == 0) continue;
+
+            if (heapSize < topK) {
+                // Heap not full, add element
+                topKReviews[heapSize] = ReviewWeight(i, w);
+                heapSize++;
+                _heapifyUp(topKReviews, heapSize - 1);
+            } else if (w > topKReviews[0].weight) {
+                // Replace minimum element if current weight is larger
+                topKReviews[0] = ReviewWeight(i, w);
+                _heapifyDown(topKReviews, 0, heapSize);
             }
         }
 
         // Protect: if no eligible reviews, skip distribution
-        if (eligibleCount == 0) {
+        if (heapSize == 0) {
             emit RewardsDistributed(currentMonth);
             return;
         }
 
-        // Sort to get top K (simple bubble sort for small arrays)
-        // For production, consider more efficient sorting algorithms
-        for (uint256 i = 0; i < eligibleCount - 1; i++) {
-            for (uint256 j = 0; j < eligibleCount - i - 1; j++) {
-                if (eligibleReviews[j].weight < eligibleReviews[j + 1].weight) {
-                    ReviewWeight memory temp = eligibleReviews[j];
-                    eligibleReviews[j] = eligibleReviews[j + 1];
-                    eligibleReviews[j + 1] = temp;
-                }
-            }
-        }
-
-        // Determine actual K (minimum between topK and eligible reviews)
-        uint256 actualK = topK < eligibleCount ? topK : eligibleCount;
-
         // Calculate total weight for top K reviews
         uint256 totalWeight = 0;
-        for (uint256 i = 0; i < actualK; i++) {
-            totalWeight += eligibleReviews[i].weight;
+        for (uint256 i = 0; i < heapSize; i++) {
+            totalWeight += topKReviews[i].weight;
         }
 
         // Protect: if totalWeight == 0, skip distribution to avoid division by zero
@@ -261,9 +254,9 @@ contract VotingAndRewards {
         }
 
         // Distribute rewards only to top K reviewers
-        for (uint256 i = 0; i < actualK; i++) {
-            uint256 nftId = eligibleReviews[i].nftId;
-            uint256 weight = eligibleReviews[i].weight;
+        for (uint256 i = 0; i < heapSize; i++) {
+            uint256 nftId = topKReviews[i].nftId;
+            uint256 weight = topKReviews[i].weight;
 
             uint256 tokens = (rewardPool * weight) / totalWeight;
             reviewRewards[nftId][currentMonth] = tokens;
@@ -275,6 +268,48 @@ contract VotingAndRewards {
         }
 
         emit RewardsDistributed(currentMonth);
+    }
+
+    /**
+     * Min-heap helper functions for efficient top-K selection
+     */
+    function _heapifyUp(ReviewWeight[] memory heap, uint256 index) private pure {
+        while (index > 0) {
+            uint256 parentIndex = (index - 1) / 2;
+            if (heap[index].weight >= heap[parentIndex].weight) break;
+            
+            // Swap with parent
+            ReviewWeight memory temp = heap[index];
+            heap[index] = heap[parentIndex];
+            heap[parentIndex] = temp;
+            
+            index = parentIndex;
+        }
+    }
+
+    function _heapifyDown(ReviewWeight[] memory heap, uint256 index, uint256 heapSize) private pure {
+        while (true) {
+            uint256 smallest = index;
+            uint256 leftChild = 2 * index + 1;
+            uint256 rightChild = 2 * index + 2;
+
+            if (leftChild < heapSize && heap[leftChild].weight < heap[smallest].weight) {
+                smallest = leftChild;
+            }
+            
+            if (rightChild < heapSize && heap[rightChild].weight < heap[smallest].weight) {
+                smallest = rightChild;
+            }
+
+            if (smallest == index) break;
+
+            // Swap with smallest child
+            ReviewWeight memory temp = heap[index];
+            heap[index] = heap[smallest];
+            heap[smallest] = temp;
+            
+            index = smallest;
+        }
     }
 
 
