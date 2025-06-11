@@ -127,8 +127,8 @@ contract VotingAndRewards {
     }
 
     /**
-     * Revoke review
-     */
+     Revoke review
+    **/
     function revokeReview(uint256 reviewId) external {
         Review storage r = reviews[reviewId];
         require(r.author == msg.sender, "Only author");
