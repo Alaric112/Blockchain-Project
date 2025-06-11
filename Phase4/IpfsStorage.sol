@@ -11,6 +11,7 @@ contract IpfsStorage {
         address shop;      
         uint256 timestamp;
         uint256 netScore;
+        bool revoked;
     }
 
     MyTokenNFT public nft;
@@ -42,7 +43,8 @@ contract IpfsStorage {
             ipfsCID : _cid,
             shop : submittedShop,
             timestamp : block.timestamp,
-            netScore : 0
+            netScore : 0,
+            revoked : false
         });
 
         reviewerMerchantBinding[submitter][submittedShop] = true;
@@ -58,10 +60,12 @@ contract IpfsStorage {
     function modifyReview(uint256 nftId, string memory newCID) public {
 
         require(nft.exists(nftId), "Token does not exists!");
-        require(nft.ownerOf(nftId) == msg.sender, "User is not true holder of the NFT!");
+        require(nft.ownerOf(nftId) == msg.sender, "User is not true holder of the NFT!");       
+        require(!submittedReviews[nftId].revoked, "Review deleted!");  
 
         string memory oldCID = submittedReviews[nftId].ipfsCID;
         submittedReviews[nftId].ipfsCID = newCID;
+        submittedReviews[nftId].timestamp = block.timestamp;
         submittedReviews[nftId].netScore = 0;
 
         emit ReviewModified(oldCID, submittedReviews[nftId].shop);
@@ -70,13 +74,15 @@ contract IpfsStorage {
     function deleteReview(uint256 nftId) public {
 
         require(nft.exists(nftId), "Token does not exists!");
-        require(nft.ownerOf(nftId) == msg.sender, "User is not true holder of the NFT!");  
+        require(nft.ownerOf(nftId) == msg.sender, "User is not true holder of the NFT!");    
+        require(!submittedReviews[nftId].revoked, "Review already deleted!");  
 
         string memory oldCID = submittedReviews[nftId].ipfsCID;
         submittedReviews[nftId].ipfsCID = "";
         submittedReviews[nftId].shop = address(0);
         submittedReviews[nftId].timestamp = 0;
         submittedReviews[nftId].netScore = 0;
+        submittedReviews[nftId].revoked = true;
 
         emit ReviewDeleted(oldCID);
 

@@ -10,11 +10,10 @@ import "./RewardToken.sol";
 contract VotingAndRewards {
     struct Review {
         address author;
-        string content;
-        uint256 timestampCreated;
-        uint256 timestampModified;
+        string ipfsCID;       
+        address shop;   
+        uint256 timestamp;
         bool revoked;
-        string[] editHistory;
         int256 netScore;
         mapping(address => int8) votes; // +1, -1 or 0
     }
@@ -22,7 +21,7 @@ contract VotingAndRewards {
     RewardToken public rewardToken;
     address public admin;
 
-    uint256 public nextReviewId;
+    uint256 public nextnftId;
     mapping(uint256 => Review) public reviews;
 
     // Voting params
@@ -35,15 +34,15 @@ contract VotingAndRewards {
     uint256 public mu = 2; // peak month
     uint256 public sigma = 1; // spread month
     uint256 public monthlyRewardPool = 10000 ether; // example: 10,000 tokens per month
-    mapping(uint256 => mapping(uint256 => uint256)) public reviewRewards; // reviewId => month => tokens distributed
+    mapping(uint256 => mapping(uint256 => uint256)) public reviewRewards; // nftId => month => tokens distributed
 
     uint256 public currentMonth;
-    mapping(uint256 => uint256) public reviewPublishedMonth; // reviewId => month published
+    mapping(uint256 => uint256) public reviewPublishedMonth; // nftId => month published
 
-    event ReviewSubmitted(uint256 reviewId, address author);
-    event ReviewRevoked(uint256 reviewId);
-    event ReviewModified(uint256 reviewId);
-    event Voted(uint256 reviewId, address voter, int8 voteWeight);
+    event ReviewSubmitted(uint256 nftId, address author);
+    event ReviewRevoked(uint256 nftId);
+    event ReviewModified(uint256 nftId);
+    event Voted(uint256 nftId, address voter, int8 voteWeight);
     event RewardsDistributed(uint256 month);
 
 
@@ -81,30 +80,29 @@ contract VotingAndRewards {
     /**
      * Submit review
      */
-    function submitReview(string calldata content) external {
-        uint256 reviewId = nextReviewId++;
-        Review storage r = reviews[reviewId];
+    function submitReview(uint256 nftId, address submittedShop, string memory _cid) external {
+        
+        Review storage r = reviews[nftId];
         r.author = msg.sender;
-        r.content = content;
-        r.timestampCreated = block.timestamp;
-        r.timestampModified = block.timestamp;
+        r.ipfsCID = _cid;
+        r.shop = submittedShop;
+        r.timestamp = block.timestamp;
         r.revoked = false;
-        r.editHistory.push(content);
         r.netScore = 0;
 
-        reviewPublishedMonth[reviewId] = currentMonth;
+        reviewPublishedMonth[nftId] = currentMonth;
 
-        emit ReviewSubmitted(reviewId, msg.sender);
+        emit ReviewSubmitted(nftId, msg.sender);
     }
 
 
     /**
      * Vote review
      */
-    function voteReview(uint256 reviewId, bool upvote) external {
-        require(!reviews[reviewId].revoked, "Review revoked");
+    function voteReview(uint256 nftId, bool upvote) external {
+        require(!reviews[nftId].revoked, "Review revoked");
 
-        Review storage r = reviews[reviewId];
+        Review storage r = reviews[nftId];
 
         int8 previousVote = r.votes[msg.sender];
         int8 newVote = upvote ? int8(1) : int8(-1);
@@ -123,49 +121,53 @@ contract VotingAndRewards {
         // Add new vote
         r.netScore += int256(newVote) * int256(weight);
 
-        emit Voted(reviewId, msg.sender, newVote * weight);
+        emit Voted(nftId, msg.sender, newVote * weight);
     }
 
     /**
      * Revoke review
      */
-    function revokeReview(uint256 reviewId) external {
-        Review storage r = reviews[reviewId];
+    function revokeReview(uint256 nftId) external {
+        Review storage r = reviews[nftId];
         require(r.author == msg.sender, "Only author");
         require(!r.revoked, "Already revoked");
 
+        r.ipfsCID = "";
+        r.shop = address(0);
+        r.timestamp = 0;
         r.revoked = true;
+        r.netScore = 0;
 
-        emit ReviewRevoked(reviewId);
+
+        emit ReviewRevoked(nftId);
     }
 
     /**
      * Modify review
      */
-    function modifyReview(uint256 reviewId, string calldata newContent) external {
-        Review storage r = reviews[reviewId];
+    function modifyReview(uint256 nftId, string memory newCID) external {
+        Review storage r = reviews[nftId];
         require(r.author == msg.sender, "Only author");
         require(!r.revoked, "Review revoked");
 
-        r.content = newContent;
-        r.timestampModified = block.timestamp;
-        r.editHistory.push(newContent);
+        r.timestamp = block.timestamp;
+        r.ipfsCID = newCID;
 
         // Reset votes
         r.netScore = 0;
         // Note: cleaning up votes mapping not implemented for simplicity
 
-        emit ReviewModified(reviewId);
+        emit ReviewModified(nftId);
     }
 
     /**
      * Get visibility score
      */
-    function getVisibilityScore(uint256 reviewId) external view returns (uint256) {
-    Review storage r = reviews[reviewId];
+    function getVisibilityScore(uint256 nftId) external view returns (uint256) {
+    Review storage r = reviews[nftId];
     require(!r.revoked, "Review revoked");
 
-    uint256 ageInMonths = currentMonth - reviewPublishedMonth[reviewId];
+    uint256 ageInMonths = currentMonth - reviewPublishedMonth[nftId];
 
     // Simplified denominator to avoid overflow
     // You can tune this formula as you like, here it's linear decay
@@ -201,10 +203,10 @@ contract VotingAndRewards {
     }
 
     uint256 totalWeight = 0;
-    uint256[] memory weights = new uint256[](nextReviewId);
+    uint256[] memory weights = new uint256[](nextnftId);
 
     // First pass: compute total W(j)
-    for (uint256 i = 0; i < nextReviewId; i++) {
+    for (uint256 i = 0; i < nextnftId; i++) {
         Review storage r = reviews[i];
         if (r.revoked || r.netScore <= 0) continue;
 
@@ -228,7 +230,7 @@ contract VotingAndRewards {
     }
 
     // Second pass: distribute rewards
-    for (uint256 i = 0; i < nextReviewId; i++) {
+    for (uint256 i = 0; i < nextnftId; i++) {
         if (weights[i] == 0) continue;
 
         uint256 tokens = (rewardPool * weights[i]) / totalWeight;
