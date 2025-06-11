@@ -18,6 +18,11 @@ contract VotingAndRewards {
         mapping(address => int8) votes; // +1, -1 or 0
     }
 
+    struct ReviewWeight {
+        uint256 nftId;
+        uint256 weight;
+    }
+
     RewardToken public rewardToken;
     address public admin;
 
@@ -34,6 +39,7 @@ contract VotingAndRewards {
     uint256 public mu = 2; // peak month
     uint256 public sigma = 1; // spread month
     uint256 public monthlyRewardPool = 10000 ether; // example: 10,000 tokens per month
+    uint256 public topK = 10; // Top K reviewers to reward
     mapping(uint256 => mapping(uint256 => uint256)) public reviewRewards; // nftId => month => tokens distributed
 
     uint256 public currentMonth;
@@ -185,65 +191,91 @@ contract VotingAndRewards {
 
 
     /**
-     *
-     Distribuire una quantità fissa di token (ad esempio 10.000 RVT) tra gli autori delle review più apprezzate
-     (quelle con net score positivo), in proporzione a quanto la community le ha valutate utili, e in base all’età 
-     della review. Ogni mese mintiamo nuovi token e li distribuiamo tra le review meritevoli.
+     * Distribute rewards to top K reviewers only
      */
-    
-   function distributeRewards() external onlyAdmin {
-    currentMonth++;
+    function distributeRewards() external onlyAdmin {
+        currentMonth++;
 
-    uint256 rewardPool = rewardToken.balanceOf(address(this)); // TESORERIA → usa i token che il contratto possiede
+        uint256 rewardPool = rewardToken.balanceOf(address(this)); // TESORERIA → usa i token che il contratto possiede
 
-    // Protect: if rewardPool == 0, skip distribution
-    if (rewardPool == 0) {
-        emit RewardsDistributed(currentMonth);
-        return;
-    }
-
-    uint256 totalWeight = 0;
-    uint256[] memory weights = new uint256[](nextnftId);
-
-    // First pass: compute total W(j)
-    for (uint256 i = 0; i < nextnftId; i++) {
-        Review storage r = reviews[i];
-        if (r.revoked || r.netScore <= 0) continue;
-
-        uint256 j = currentMonth - reviewPublishedMonth[i];
-        uint256 w = gaussianWeight(j);
-
-        // Protect against potential weight overflow (clamp max value if needed)
-        if (w > 1e18) {
-            w = 1e18; // max weight cap
+        // Protect: if rewardPool == 0, skip distribution
+        if (rewardPool == 0) {
+            emit RewardsDistributed(currentMonth);
+            return;
         }
 
-        weights[i] = w;
-        totalWeight += w;
+        // Create array to store all eligible reviews with their weights
+        ReviewWeight[] memory eligibleReviews = new ReviewWeight[](nextnftId);
+        uint256 eligibleCount = 0;
 
-    }
+        // First pass: collect all eligible reviews and their weights
+        for (uint256 i = 0; i < nextnftId; i++) {
+            Review storage r = reviews[i];
+            if (r.revoked || r.netScore <= 0) continue;
 
-    // Protect: if totalWeight == 0, skip distribution to avoid division by zero
-    if (totalWeight == 0) {
+            uint256 j = currentMonth - reviewPublishedMonth[i];
+            uint256 w = gaussianWeight(j);
+
+            // Protect against potential weight overflow (clamp max value if needed)
+            if (w > 1e18) {
+                w = 1e18; // max weight cap
+            }
+
+            if (w > 0) {
+                eligibleReviews[eligibleCount] = ReviewWeight(i, w);
+                eligibleCount++;
+            }
+        }
+
+        // Protect: if no eligible reviews, skip distribution
+        if (eligibleCount == 0) {
+            emit RewardsDistributed(currentMonth);
+            return;
+        }
+
+        // Sort to get top K (simple bubble sort for small arrays)
+        // For production, consider more efficient sorting algorithms
+        for (uint256 i = 0; i < eligibleCount - 1; i++) {
+            for (uint256 j = 0; j < eligibleCount - i - 1; j++) {
+                if (eligibleReviews[j].weight < eligibleReviews[j + 1].weight) {
+                    ReviewWeight memory temp = eligibleReviews[j];
+                    eligibleReviews[j] = eligibleReviews[j + 1];
+                    eligibleReviews[j + 1] = temp;
+                }
+            }
+        }
+
+        // Determine actual K (minimum between topK and eligible reviews)
+        uint256 actualK = topK < eligibleCount ? topK : eligibleCount;
+
+        // Calculate total weight for top K reviews
+        uint256 totalWeight = 0;
+        for (uint256 i = 0; i < actualK; i++) {
+            totalWeight += eligibleReviews[i].weight;
+        }
+
+        // Protect: if totalWeight == 0, skip distribution to avoid division by zero
+        if (totalWeight == 0) {
+            emit RewardsDistributed(currentMonth);
+            return;
+        }
+
+        // Distribute rewards only to top K reviewers
+        for (uint256 i = 0; i < actualK; i++) {
+            uint256 nftId = eligibleReviews[i].nftId;
+            uint256 weight = eligibleReviews[i].weight;
+
+            uint256 tokens = (rewardPool * weight) / totalWeight;
+            reviewRewards[nftId][currentMonth] = tokens;
+
+            // Skip transferring 0 tokens to avoid ERC20 revert
+            if (tokens == 0) continue;
+
+            rewardToken.transfer(reviews[nftId].author, tokens); // QUI il transfer effettivo (tesoreria)
+        }
+
         emit RewardsDistributed(currentMonth);
-        return;
     }
-
-    // Second pass: distribute rewards
-    for (uint256 i = 0; i < nextnftId; i++) {
-        if (weights[i] == 0) continue;
-
-        uint256 tokens = (rewardPool * weights[i]) / totalWeight;
-        reviewRewards[i][currentMonth] = tokens;
-
-        // Skip transferring 0 tokens to avoid ERC20 revert
-        if (tokens == 0) continue;
-
-        rewardToken.transfer(reviews[i].author, tokens); // QUI il transfer effettivo (tesoreria)
-    }
-
-    emit RewardsDistributed(currentMonth);
-}
 
 
     /**
