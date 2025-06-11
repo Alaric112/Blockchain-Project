@@ -9,8 +9,8 @@ const votingAbi = JSON.parse(fs.readFileSync('VotingAndRewardsAbi.json', 'utf8')
 const rewardTokenAbi = JSON.parse(fs.readFileSync('RewardTokenAbi.json', 'utf8'));
 
 // Indirizzi dei contratti deployati
-const rewardTokenAddress = '0xbEC51C8dd9a5126Daa994B53E0C5fE678b5113ab';   // <------------- DA aggiornare
-const votingAddress = '0xE5568F95fc155Da11eF75f1aB7483f52998c0d29';        // <------------- DA aggiornare
+const rewardTokenAddress = '0x7105231B9948D4E9D18f428B7aF52a67d99620ce';   // <------------- DA aggiornare
+const votingAddress = '0x6A34860B1B197218e502f90C875932f7BfB450a0';        // <------------- DA aggiornare
 
 // Creiamo le istanze dei contratti
 const votingContract = new web3.eth.Contract(votingAbi, votingAddress);
