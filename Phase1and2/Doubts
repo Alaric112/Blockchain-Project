@@ -1,4 +1,0 @@
-- Riguardo "sd_jwt.js"
-La firma della VC da parte dell'issuer va effettivamente implementata come firma BbsBls (  const vcJwt = await createVerifiableCredentialJwt(vcPayload, issuer);)?
-Lo stesso vale per la firma della VP da parte del subject ( const vpJwt = await createVerifiablePresentationJwt(vpPayload, subject);)
-Verso la fine del file, il check che viene fatto sugli hash (if(match == 2)) non è molto flessibile, magari andrebbe pensato un modo alternativo di fare il check.
