@@ -70,6 +70,19 @@ async function downloadFromIPFS(cid, outputPath) {
   });
 }
 
+async function measure(label, txPromise) {
+  const start = process.hrtime.bigint();
+  const receipt = await txPromise;
+  const end = process.hrtime.bigint();
+  const durationMs = Number(end - start) / 1e6;
+  return {
+    label,
+    durationMs,
+    gasUsed: receipt.gasUsed
+  };
+}
+
+
 async function interact() {
   try {
     const accounts = await web3.eth.getAccounts();
