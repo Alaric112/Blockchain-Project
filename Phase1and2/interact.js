@@ -12,13 +12,13 @@ const crypto = require('crypto');
 (async () => {
   const providerUrl = 'HTTP://127.0.0.1:7545';
   const web3 = new Web3(providerUrl);
-  // Retrieve accounts from Ganache
+ // Retrieve accounts from Ganache
   const accounts = await web3.eth.getAccounts();
   const address_issuer = accounts[0];
   const address_subject = accounts[2]; // Subject of the VC
-  const registryAddress = '0xf170c4f0c751920bef24E09A9799D46E37b6Db5D'; // <-- replace with the DID contract address
-  const privateKey_issuer = '0x1136254ec073b0f6c349ccb2c7d147ebc3a15d6e67626ea6f26e174427851dc2';
-  const privateKey_subject = '0xa32fc35d4e94275cfceb5cdc6a3e02e28c39696514358b066f5b632f0fc6d54e'; // Subject of the VC
+  const registryAddress = '0x200121fd9B0A16987B753ac5b02891AE81E85D94'; // <-- replace with the DID contract address
+  const privateKey_issuer = '0x75fb73534c061caad700ae50dc4e8e61102bea3460f9c1c0b90e1329ca2edb8b'; // <-- replace with the private key of the address 0
+  const privateKey_subject = '0xd0caa6bfc79d942b81d4394369c06a75c4e77ebe59e53d70ab457a43b4ecf35e'; // <-- replace with the private key of the address 2
   const chainId = await web3.eth.getChainId();
 
   // Create issuer DID
