@@ -10,15 +10,29 @@ const tokenAbi = JSON.parse(fs.readFileSync("MyTokenNFTAbi.json", "utf8"));
 
 // Set contract address (use the one from deployment)
 // Iserire qui gli indirizzi dei contratti deployati
-const tokenAddress    = '0x7903D94485b757e483F28B1EA995D5Bc4998391B'; // <--------------- DA aggiornare
-const purchaseAddress = '0xd4733Afd791A1261087356b308745Cd6244587F0'; // <--------------- DA aggiornare
+const tokenAddress    = '0x3Cc3Ad62816fb6f08d0E39E71Ba371BAe14874E3'; // <--------------- DA aggiornare
+const purchaseAddress = '0x5180d454fF2081b17B33fd9B56aD74516E6c25fE'; // <--------------- DA aggiornare
 
 // Creiamo l’istanza del contratto
 const contract = new web3.eth.Contract(abi, purchaseAddress);
 const nftContract = new web3.eth.Contract(tokenAbi, tokenAddress);
 
+async function measure(label, txPromise) {
+  const start = process.hrtime.bigint();
+  const receipt = await txPromise;
+  const end = process.hrtime.bigint();
+  const durationMs = Number(end - start) / 1e6;
+  return {
+    label,
+    durationMs,
+    gasUsed: receipt.gasUsed
+  };
+}
+
 async function interactWithContract() {
 
+    const results = [];  
+    
     // Preleviamo gli account offerti da Ganache
     const accounts = await web3.eth.getAccounts();
 
@@ -48,7 +62,7 @@ async function interactWithContract() {
         });
 
     // ──────────────────────────────────────────────────────────────
-    // 3) Definizione dei parametri di test
+    // Definizione dei parametri di test
     // ──────────────────────────────────────────────────────────────
     const orderId    = 1;
     const shopDID    = 'did:shop:XYZ';
@@ -78,14 +92,16 @@ async function interactWithContract() {
     console.log('  commitment  =', commitment);
 
     // ──────────────────────────────────────────────────────────────
-    // 4) registerOrder (merchant)
+    // registerOrder (merchant)
     // ──────────────────────────────────────────────────────────────
     console.log('\n=== 1) registerOrder da merchant ===');
     try {
-        const txReg = await contract.methods
-        .registerOrder(orderId, shopDID, priceWei, expiration, commitment)
-        .send({ from: merchant, gas: 500000 });
-        console.log('  → registerOrder txHash:', txReg.transactionHash);
+        results.push(await measure(
+            'registerOrder',
+            contract.methods
+            .registerOrder(orderId, shopDID, priceWei, expiration, commitment)
+            .send({ from: merchant, gas: 500000 })
+        ));
     } catch (err) {
         console.error('  ❌ Errore in registerOrder:', err.message);
         process.exit(1);
@@ -96,11 +112,12 @@ async function interactWithContract() {
     // ──────────────────────────────────────────────────────────────
     console.log('\n=== 2) claimOrder da buyer ===');
 
-    await contract.methods.claimOrder(orderId, orderSecret).send({
-    from: buyer,
-    value: priceWei,
-    gas: 200000,               // Aggiungi un gas limit generoso (ad es. 300,000)
-    });
+    results.push(await measure(
+        'claimOrder (buyer)',
+        contract.methods
+        .claimOrder(orderId, orderSecret)
+        .send({ from: buyer, value: priceWei, gas: 200000 })
+    ));
 
     const balanceWei = await web3.eth.getBalance(purchaseAddress);
     console.log("💰 Saldo attuale contratto:", web3.utils.fromWei(balanceWei, 'ether'), "ETH");
@@ -112,14 +129,15 @@ async function interactWithContract() {
 
     console.log('\n=== 3) claimOrder da un utente non autorizzato (should fail) ===');
     try {
-        await contract.methods.claimOrder(orderId, orderSecret).send({
-            from: maliciousBuyer,
-            value: priceWei,
-            gas: 200000,
-        });
-        console.error("❌ ERRORE: Il secondo claimOrder è stato accettato (BUG)");
+        await measure(
+        'claimOrder (malicious)',
+        contract.methods
+            .claimOrder(orderId, orderSecret)
+            .send({ from: maliciousBuyer, value: priceWei, gas: 200000 })
+        );
+        console.error('❌ Errore: la tx non autorizzata è passata');
     } catch (err) {
-        console.log("✅ Il secondo claim è stato correttamente rifiutato:", err.message);
+        console.log('✅ claimOrder bloccato correttamente');
     }    
 
     // ──────────────────────────────────────────────────────────────
@@ -280,6 +298,10 @@ async function interactWithContract() {
     );
 
     console.log("\n=== TEST COMPLETATO ===");
+
+    // Stampa misurazioni finale
+    console.table(results, ['label', 'durationMs', 'gasUsed']);
+    fs.writeFileSync('metrics.json', JSON.stringify(results, null, 2));
 
 }
 
