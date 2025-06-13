@@ -1,3 +1,0 @@
-[{"label":"registerOrder","durationMs":18.6907,"gasUsed":138351},{"label":"claimOrder (buyer)","durationMs":14.0941,"gasUsed":120401},{"label":"merchantClaim #2 (success)","durationMs":16.1586,"gasUsed":194388}]
-[{"label":"registerOrder","durationMs":18.6998,"gasUsed":138351},{"label":"claimOrder (buyer)","durationMs":13.5869,"gasUsed":120401},{"label":"merchantClaim #2 (success)","durationMs":17.6243,"gasUsed":194388}]
-[{"label":"registerOrder","durationMs":18.6268,"gasUsed":138363},{"label":"claimOrder (buyer)","durationMs":12.9082,"gasUsed":120401},{"label":"merchantClaim #2 (success)","durationMs":15.2791,"gasUsed":194388}]
