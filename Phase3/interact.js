@@ -1,5 +1,6 @@
 const { Web3 } = require('web3');
 const fs = require('fs');
+const path = require('path');        
 
 // Connect to Ganache
 const web3 = new Web3('http://127.0.0.1:7545');
@@ -10,8 +11,8 @@ const tokenAbi = JSON.parse(fs.readFileSync("MyTokenNFTAbi.json", "utf8"));
 
 // Set contract address (use the one from deployment)
 // Iserire qui gli indirizzi dei contratti deployati
-const tokenAddress    = '0x3Cc3Ad62816fb6f08d0E39E71Ba371BAe14874E3'; // <--------------- DA aggiornare
-const purchaseAddress = '0x5180d454fF2081b17B33fd9B56aD74516E6c25fE'; // <--------------- DA aggiornare
+const tokenAddress    = '0xC5FBeDD4b50979317a53B56E6FE9987d73Ab19d5'; // <--------------- DA aggiornare
+const purchaseAddress = '0xF83F4Aa1b222a0Da2718a8D6A159F60db5403a30'; // <--------------- DA aggiornare
 
 // Creiamo l’istanza del contratto
 const contract = new web3.eth.Contract(abi, purchaseAddress);
@@ -25,7 +26,7 @@ async function measure(label, txPromise) {
   return {
     label,
     durationMs,
-    gasUsed: receipt.gasUsed
+    gasUsed: Number(receipt.gasUsed)
   };
 }
 
@@ -64,7 +65,7 @@ async function interactWithContract() {
     // ──────────────────────────────────────────────────────────────
     // Definizione dei parametri di test
     // ──────────────────────────────────────────────────────────────
-    const orderId    = 1;
+    const orderId    = 5000;
     const shopDID    = 'did:shop:XYZ';
     const priceEth   = '0.1';
     const priceWei   = web3.utils.toWei(priceEth, 'ether'); // 1 ETH
@@ -129,12 +130,12 @@ async function interactWithContract() {
 
     console.log('\n=== 3) claimOrder da un utente non autorizzato (should fail) ===');
     try {
-        await measure(
+        results.push(await measure(
         'claimOrder (malicious)',
         contract.methods
             .claimOrder(orderId, orderSecret)
             .send({ from: maliciousBuyer, value: priceWei, gas: 200000 })
-        );
+        ));
         console.error('❌ Errore: la tx non autorizzata è passata');
     } catch (err) {
         console.log('✅ claimOrder bloccato correttamente');
@@ -219,13 +220,14 @@ async function interactWithContract() {
     console.log('\n=== 4) Il merchant tenta di fare merchantClaim troppo presto (should fail) ===');
 
     try {
-        await contract.methods.merchantClaim(orderId2).send({
-            from: merchant,
-            gas: 200000,
-        });
-        console.error("❌ ERRORE: merchantClaim è riuscita troppo presto (BUG)");
+        await measure(
+        'merchantClaim #2 (too early)',
+        contract.methods.merchantClaim(orderId2)
+            .send({ from: merchant, gas: 200000 })
+        );
+        console.error('❌ merchantClaim precoce è passato (BUG)');
     } catch (err) {
-        console.log("✅ Corretta protezione contro merchantClaim precoce:", err.message);
+        console.log('✅ merchantClaim #2 bloccato per finalità');
     }
 
     console.log('\n=== 5) Un utente non autorizzato prova a fare merchantClaim (should fail) ===');
@@ -233,13 +235,14 @@ async function interactWithContract() {
     const attacker = accounts[4];
 
     try {
-        await contract.methods.merchantClaim(orderId2).send({
-            from: attacker,
-            gas: 200000,
-        });
-        console.error("❌ ERRORE: merchantClaim accettata da utente non autorizzato (BUG)");
+        await measure(
+        'merchantClaim #2 (unauthorized)',
+        contract.methods.merchantClaim(orderId2)
+            .send({ from: attacker, gas: 200000 })
+        );
+        console.error('❌ merchantClaim non autorizzato è passato (BUG)');
     } catch (err) {
-        console.log("✅ merchantClaim bloccata per utente non autorizzato:", err.message);
+        console.log('✅ merchantClaim #2 bloccato per permessi');
     }
 
     console.log('\n🔁 Inviamo 5 TX dummy per avanzare blocchi...');
@@ -256,15 +259,11 @@ async function interactWithContract() {
 
     const merchantBalanceBefore = await web3.eth.getBalance(merchant);
 
-    try {
-        const tx = await contract.methods.merchantClaim(orderId2).send({
-            from: merchant,
-            gas: 300000,
-        });
-        console.log("✅ merchantClaim riuscita, txHash:", tx.transactionHash);
-    } catch (err) {
-        console.error("❌ merchantClaim fallita (BUG):", err.message);
-    }
+    results.push(await measure(
+        'merchantClaim #2 (success)',
+        contract.methods.merchantClaim(orderId2)
+        .send({ from: merchant, gas: 300000 })
+    ));
 
     const merchantBalanceAfter = await web3.eth.getBalance(merchant);
 
@@ -298,11 +297,48 @@ async function interactWithContract() {
     );
 
     console.log("\n=== TEST COMPLETATO ===");
-
+    console.log("\n=== STAMPA RISULTATI ===");
+    
     // Stampa misurazioni finale
     console.table(results, ['label', 'durationMs', 'gasUsed']);
-    fs.writeFileSync('metrics.json', JSON.stringify(results, null, 2));
 
+    // Scegli un “base name” per i file
+    const phaseName = 'Phase3';
+
+    const outDir    = path.join(__dirname, '..', 'metrics');
+    if (!fs.existsSync(outDir)) fs.mkdirSync(outDir);
+
+    // --- JSONL: facciamo append, non overwrite
+    const jsonlFile = path.join(outDir, `${phaseName}.jsonl`);
+    // Append di una riga JSON+newline
+    fs.appendFileSync(
+        jsonlFile,
+        JSON.stringify(
+        results,
+        (_, v) => typeof v === 'bigint' ? v.toString() : v
+        ) + '\n'
+    );
+    console.log(`📊 Metrics JSONL appese in ${jsonlFile}`);
+
+    // --- CSV: scriviamo l’header solo se il file non esiste, poi appendiamo le righe
+    const csvFile = path.join(outDir, `${phaseName}.csv`);
+    const header  = Object.keys(results[0]).join(',') + '\n';
+    const csvBody = results
+        .map(r => Object.values(r)
+        .map(v => `"${String(v).replace(/"/g, '""')}"`)
+        .join(',')
+        ).join('\n') + '\n';
+
+    if (!fs.existsSync(csvFile)) {
+        // Prima run: creo e scrivo header+body
+        fs.writeFileSync(csvFile, header + csvBody);
+        console.log(`📊 Metrics CSV create in ${csvFile}`);
+    } else {
+        // Run successive: appendo solo il body
+        fs.appendFileSync(csvFile, csvBody);
+        console.log(`📊 Metrics CSV appese in  ${csvFile}`);
+    }
+    
 }
 
 interactWithContract().catch(console.error);

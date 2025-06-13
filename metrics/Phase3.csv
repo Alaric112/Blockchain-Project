@@ -1,0 +1,9 @@
+label,durationMs,gasUsed
+"registerOrder","18.6907","138351"
+"claimOrder (buyer)","14.0941","120401"
+"merchantClaim #2 (success)","16.1586","194388""registerOrder","18.6998","138351"
+"claimOrder (buyer)","13.5869","120401"
+"merchantClaim #2 (success)","17.6243","194388"
+"registerOrder","18.6268","138363"
+"claimOrder (buyer)","12.9082","120401"
+"merchantClaim #2 (success)","15.2791","194388"
