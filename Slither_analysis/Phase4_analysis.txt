@@ -1,0 +1,66 @@
+'solc --version' running
+'solc .\IpfsStorage.sol --combined-json abi,ast,bin,bin-runtime,srcmap,srcmap-runtime,userdoc,devdoc,hashes --allow-paths .,C:\Users\lucac\Documents\Blockchain-Project\Phase4' running
+Compilation warnings/errors on .\IpfsStorage.sol:
+Error: Source "Phase3/MyTokenNFT.sol" not found: File not found. Searched the following locations: "".
+ --> IpfsStorage.sol:4:1:
+  |
+4 | import "../Phase3/MyTokenNFT.sol";
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Traceback (most recent call last):
+  File "C:\Users\lucac\AppData\Roaming\Python\Python313\site-packages\crytic_compile\platform\solc.py", line 581, in _run_solc
+    ret: Dict = json.loads(stdout)
+                ~~~~~~~~~~^^^^^^^^
+  File "C:\Python313\Lib\json\__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "C:\Python313\Lib\json\decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\json\decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\lucac\AppData\Roaming\Python\Python313\Scripts\slither.exe\__main__.py", line 7, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "C:\Users\lucac\AppData\Roaming\Python\Python313\site-packages\slither\__main__.py", line 776, in main
+    main_impl(all_detector_classes=detectors, all_printer_classes=printers)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lucac\AppData\Roaming\Python\Python313\site-packages\slither\__main__.py", line 882, in main_impl
+    ) = process_all(filename, args, detector_classes, printer_classes)
+        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lucac\AppData\Roaming\Python\Python313\site-packages\slither\__main__.py", line 96, in process_all
+    compilations = compile_all(target, **vars(args))
+  File "C:\Users\lucac\AppData\Roaming\Python\Python313\site-packages\crytic_compile\crytic_compile.py", line 737, in compile_all
+    compilations.append(CryticCompile(filename, **kwargs))
+                        ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lucac\AppData\Roaming\Python\Python313\site-packages\crytic_compile\crytic_compile.py", line 211, in __init__
+    self._compile(**kwargs)
+    ~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\lucac\AppData\Roaming\Python\Python313\site-packages\crytic_compile\crytic_compile.py", line 633, in _compile
+    self._platform.compile(self, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\lucac\AppData\Roaming\Python\Python313\site-packages\crytic_compile\platform\solc.py", line 150, in compile
+    targets_json = _get_targets_json(compilation_unit, self._target, **kwargs)
+  File "C:\Users\lucac\AppData\Roaming\Python\Python313\site-packages\crytic_compile\platform\solc.py", line 279, in _get_targets_json
+    return _run_solc(
+        compilation_unit,
+    ...<6 lines>...
+        force_legacy_json=force_legacy_json,
+    )
+  File "C:\Users\lucac\AppData\Roaming\Python\Python313\site-packages\crytic_compile\platform\solc.py", line 585, in _run_solc
+    raise InvalidCompilation(f"Invalid solc compilation {stderr}")
+crytic_compile.platform.exceptions.InvalidCompilation: Invalid solc compilation Error: Source "Phase3/MyTokenNFT.sol" not found: File not found. Searched the following locations: "".
+ --> IpfsStorage.sol:4:1:
+  |
+4 | import "../Phase3/MyTokenNFT.sol";
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+

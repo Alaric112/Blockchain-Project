@@ -1,0 +1,113 @@
+'solc --version' running
+'solc .\RewardToken.sol --combined-json abi,ast,bin,bin-runtime,srcmap,srcmap-runtime,userdoc,devdoc,hashes --allow-paths .,C:\Users\lucac\Documents\Blockchain-Project\Phase5' running
+'solc --version' running
+'solc .\VotingAndRewards.sol --combined-json abi,ast,bin,bin-runtime,srcmap,srcmap-runtime,userdoc,devdoc,hashes --allow-paths .,C:\Users\lucac\Documents\Blockchain-Project\Phase5' running
+INFO:Detectors:
+Version constraint ^0.8.0 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess
+	- AbiReencodingHeadOverflowWithStaticArrayCleanup
+	- DirtyBytesArrayToStorage
+	- DataLocationChangeInInternalOverride
+	- NestedCalldataArrayAbiReencodingSizeValidation
+	- SignedImmutables
+	- ABIDecodeTwoDimensionalArrayMemory
+	- KeccakCaching.
+It is used by:
+	- ^0.8.0 (RewardToken.sol#2)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+INFO:Detectors:
+RewardToken.decimals (RewardToken.sol#8) should be constant 
+RewardToken.name (RewardToken.sol#6) should be constant 
+RewardToken.symbol (RewardToken.sol#7) should be constant 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variables-that-could-be-declared-constant
+INFO:Detectors:
+RewardToken.totalSupply (RewardToken.sol#9) should be immutable 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variables-that-could-be-declared-immutable
+INFO:Detectors:
+VotingAndRewards.distributeRewards() (VotingAndRewards.sol#191-253) ignores return value by rewardToken.transfer(reviews[rid].author,tokens) (VotingAndRewards.sol#249)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unchecked-transfer
+INFO:Detectors:
+VotingAndRewards.distributeRewards() (VotingAndRewards.sol#191-253) uses a dangerous strict equality:
+	- rewardPool == 0 (VotingAndRewards.sol#195)
+VotingAndRewards.distributeRewards() (VotingAndRewards.sol#191-253) uses a dangerous strict equality:
+	- tokens == 0 (VotingAndRewards.sol#247)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+INFO:Detectors:
+VotingAndRewards.transferAdmin(address) (VotingAndRewards.sol#70-72) should emit an event for: 
+	- admin = newAdmin (VotingAndRewards.sol#71) 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-events-access-control
+INFO:Detectors:
+VotingAndRewards.setMu(uint256) (VotingAndRewards.sol#306-308) should emit an event for: 
+	- mu = _mu (VotingAndRewards.sol#307) 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-events-arithmetic
+INFO:Detectors:
+VotingAndRewards.transferAdmin(address).newAdmin (VotingAndRewards.sol#70) lacks a zero-check on :
+		- admin = newAdmin (VotingAndRewards.sol#71)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+INFO:Detectors:
+VotingAndRewards.distributeRewards() (VotingAndRewards.sol#191-253) has external calls inside a loop: rewardToken.transfer(reviews[rid].author,tokens) (VotingAndRewards.sol#249)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+INFO:Detectors:
+Reentrancy in VotingAndRewards.distributeRewards() (VotingAndRewards.sol#191-253):
+	External calls:
+	- rewardToken.transfer(reviews[rid].author,tokens) (VotingAndRewards.sol#249)
+	State variables written after the call(s):
+	- reviewRewards[rid][currentMonth] = tokens (VotingAndRewards.sol#246)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-2
+INFO:Detectors:
+Reentrancy in VotingAndRewards.distributeRewards() (VotingAndRewards.sol#191-253):
+	External calls:
+	- rewardToken.transfer(reviews[rid].author,tokens) (VotingAndRewards.sol#249)
+	Event emitted after the call(s):
+	- RewardsDistributed(currentMonth) (VotingAndRewards.sol#252)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+INFO:Detectors:
+VotingAndRewards.voteReview(uint256,bool) (VotingAndRewards.sol#107-126) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(! reviews[reviewId].revoked,Review revoked) (VotingAndRewards.sol#108)
+VotingAndRewards.revokeReview(uint256) (VotingAndRewards.sol#133-144) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(r.author == msg.sender,Only author) (VotingAndRewards.sol#135)
+	- require(bool,string)(! r.revoked,Already revoked) (VotingAndRewards.sol#136)
+VotingAndRewards.modifyReview(uint256,string) (VotingAndRewards.sol#152-162) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(r.author == msg.sender,Only author) (VotingAndRewards.sol#154)
+	- require(bool,string)(! r.revoked,Review revoked) (VotingAndRewards.sol#155)
+VotingAndRewards.getVisibilityScore(uint256) (VotingAndRewards.sol#170-184) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(! r.revoked,Review revoked) (VotingAndRewards.sol#172)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+Version constraint ^0.8.0 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess
+	- AbiReencodingHeadOverflowWithStaticArrayCleanup
+	- DirtyBytesArrayToStorage
+	- DataLocationChangeInInternalOverride
+	- NestedCalldataArrayAbiReencodingSizeValidation
+	- SignedImmutables
+	- ABIDecodeTwoDimensionalArrayMemory
+	- KeccakCaching.
+It is used by:
+	- ^0.8.0 (RewardToken.sol#2)
+	- ^0.8.0 (VotingAndRewards.sol#2)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+INFO:Detectors:
+Parameter VotingAndRewards.submitReview(string)._content (VotingAndRewards.sol#85) is not in mixedCase
+Parameter VotingAndRewards.setAlpha(uint256)._alpha (VotingAndRewards.sol#302) is not in mixedCase
+Parameter VotingAndRewards.setMu(uint256)._mu (VotingAndRewards.sol#306) is not in mixedCase
+Parameter VotingAndRewards.setSigma(uint256)._sigma (VotingAndRewards.sol#310) is not in mixedCase
+Parameter VotingAndRewards.setMonthlyRewardPool(uint256)._amount (VotingAndRewards.sol#314) is not in mixedCase
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+INFO:Detectors:
+RewardToken.decimals (RewardToken.sol#8) should be constant 
+RewardToken.name (RewardToken.sol#6) should be constant 
+RewardToken.symbol (RewardToken.sol#7) should be constant 
+VotingAndRewards.topK (VotingAndRewards.sol#41) should be constant 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variables-that-could-be-declared-constant
+INFO:Detectors:
+RewardToken.totalSupply (RewardToken.sol#9) should be immutable 
+VotingAndRewards.rewardToken (VotingAndRewards.sol#25) should be immutable 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variables-that-could-be-declared-immutable
+INFO:Slither:. analyzed (3 contracts with 100 detectors), 30 result(s) found

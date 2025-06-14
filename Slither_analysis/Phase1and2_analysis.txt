@@ -1,0 +1,22 @@
+'solc --version' running
+'solc .\EthrDIDRegistry.sol --combined-json abi,ast,bin,bin-runtime,srcmap,srcmap-runtime,userdoc,devdoc,hashes --allow-paths .,C:\Users\lucac\Documents\Blockchain-Project\Phase1and2' running
+INFO:Detectors:
+EthereumDIDRegistry.validDelegate(address,bytes32,address) (EthrDIDRegistry.sol#54-57) uses timestamp for comparisons
+	Dangerous comparisons:
+	- (validity > block.timestamp) (EthrDIDRegistry.sol#56)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+Version constraint ^0.8.0 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess
+	- AbiReencodingHeadOverflowWithStaticArrayCleanup
+	- DirtyBytesArrayToStorage
+	- DataLocationChangeInInternalOverride
+	- NestedCalldataArrayAbiReencodingSizeValidation
+	- SignedImmutables
+	- ABIDecodeTwoDimensionalArrayMemory
+	- KeccakCaching.
+It is used by:
+	- ^0.8.0 (EthrDIDRegistry.sol#3)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+INFO:Slither:. analyzed (1 contracts with 100 detectors), 2 result(s) found

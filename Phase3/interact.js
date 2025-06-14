@@ -95,7 +95,7 @@ async function interactWithContract() {
     console.log('\n=== 0) Modifying admin of MyTokenNFT ===');
     try {
         await nftContract.methods.setAdmin(purchaseAddress).send({from: accounts[0]});
-
+        console.log('✅ setAdmin eseguito con successo!');
     } catch (err) {
         console.error('  ❌ Errore in setAdmin:', err.message);
         process.exit(1);

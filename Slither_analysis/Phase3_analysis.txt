@@ -1,0 +1,76 @@
+'solc --version' running
+'solc .\MyTokenNFT.sol --combined-json abi,ast,bin,bin-runtime,srcmap,srcmap-runtime,userdoc,devdoc,hashes --allow-paths .,C:\Users\lucac\Documents\Blockchain-Project\Phase3' running
+'solc --version' running
+'solc .\PurchaseAndMint.sol --combined-json abi,ast,bin,bin-runtime,srcmap,srcmap-runtime,userdoc,devdoc,hashes --allow-paths .,C:\Users\lucac\Documents\Blockchain-Project\Phase3' running
+INFO:Detectors:
+MyTokenNFT.setAdmin(address) (MyTokenNFT.sol#58-60) should emit an event for: 
+	- admin = newAdmin (MyTokenNFT.sol#59) 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-events-access-control
+INFO:Detectors:
+MyTokenNFT.setAdmin(address).newAdmin (MyTokenNFT.sol#58) lacks a zero-check on :
+		- admin = newAdmin (MyTokenNFT.sol#59)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+INFO:Detectors:
+Version constraint ^0.8.0 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess
+	- AbiReencodingHeadOverflowWithStaticArrayCleanup
+	- DirtyBytesArrayToStorage
+	- DataLocationChangeInInternalOverride
+	- NestedCalldataArrayAbiReencodingSizeValidation
+	- SignedImmutables
+	- ABIDecodeTwoDimensionalArrayMemory
+	- KeccakCaching.
+It is used by:
+	- ^0.8.0 (MyTokenNFT.sol#2)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+INFO:Detectors:
+MyTokenNFT.setAdmin(address) (MyTokenNFT.sol#58-60) should emit an event for: 
+	- admin = newAdmin (MyTokenNFT.sol#59) 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-events-access-control
+INFO:Detectors:
+MyTokenNFT.setAdmin(address).newAdmin (MyTokenNFT.sol#58) lacks a zero-check on :
+		- admin = newAdmin (MyTokenNFT.sol#59)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+INFO:Detectors:
+Reentrancy in PurchaseAndMint.merchantClaim(uint256) (PurchaseAndMint.sol#78-102):
+	External calls:
+	- nft.mint(buyer,orderId,msg.sender) (PurchaseAndMint.sol#99)
+	External calls sending eth:
+	- address(msg.sender).transfer(ord.cost) (PurchaseAndMint.sol#94)
+	Event emitted after the call(s):
+	- OrderSettled(orderId) (PurchaseAndMint.sol#101)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+INFO:Detectors:
+PurchaseAndMint.claimOrder(uint256,bytes32) (PurchaseAndMint.sol#57-71) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(block.timestamp <= orders[orderId].expirationDate,Window to claim the order has expired!) (PurchaseAndMint.sol#60)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+Version constraint ^0.8.0 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess
+	- AbiReencodingHeadOverflowWithStaticArrayCleanup
+	- DirtyBytesArrayToStorage
+	- DataLocationChangeInInternalOverride
+	- NestedCalldataArrayAbiReencodingSizeValidation
+	- SignedImmutables
+	- ABIDecodeTwoDimensionalArrayMemory
+	- KeccakCaching.
+It is used by:
+	- ^0.8.0 (MyTokenNFT.sol#2)
+	- ^0.8.0 (PurchaseAndMint.sol#3)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+INFO:Detectors:
+Reentrancy in PurchaseAndMint.merchantClaim(uint256) (PurchaseAndMint.sol#78-102):
+	External calls:
+	- address(msg.sender).transfer(ord.cost) (PurchaseAndMint.sol#94)
+	State variables written after the call(s):
+	- settledOrders[orderId] = true (PurchaseAndMint.sol#95)
+	Event emitted after the call(s):
+	- OrderSettled(orderId) (PurchaseAndMint.sol#101)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-4
+INFO:Detectors:
+PurchaseAndMint.nft (PurchaseAndMint.sol#9) should be immutable 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variables-that-could-be-declared-immutable
+INFO:Slither:. analyzed (3 contracts with 100 detectors), 10 result(s) found
