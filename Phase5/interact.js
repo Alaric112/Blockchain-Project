@@ -21,7 +21,7 @@ const votingAddress = '0xf441fF50AD4e4Cc9840D89bD401E64dC4b6b56c4';        // <-
 const votingContract = new web3.eth.Contract(votingAbi, votingAddress);
 const rewardTokenContract = new web3.eth.Contract(rewardTokenAbi, rewardTokenAddress);
 
-async function measure(label, txPromise) {
+async function measure(label, txPromise) { 
   const start = process.hrtime.bigint();
   const receipt = await txPromise;
   const end = process.hrtime.bigint();
@@ -312,7 +312,12 @@ async function interactWithVotingContract() {
     // Trasferiamo altri token e distribuiamo di nuovo
     await rewardTokenContract.methods.transfer(votingAddress, web3.utils.toWei('1000', 'ether')).send({ from: admin, gas: 100000 });
     console.log('✅ Trasferiti 1000 RWT al contratto VotingAndRewards (secondo mese)');
-    await votingContract.methods.distributeRewards().send({ from: admin, gas: 500000 });
+
+
+    await await results.push(await measure(
+            'distributeRewards', votingContract.methods.distributeRewards().send({ from: admin, gas: 500000 })
+    ));
+
     console.log('✅ Seconda distribuzione rewards completata');
     const currentMonth2 = await votingContract.methods.currentMonth().call();
     console.log(`📅 Mese corrente dopo seconda distribuzione: ${currentMonth2}`);
