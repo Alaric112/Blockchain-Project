@@ -14,8 +14,8 @@ const votingAbi = JSON.parse(fs.readFileSync('VotingAndRewardsAbi.json', 'utf8')
 const rewardTokenAbi = JSON.parse(fs.readFileSync('RewardTokenAbi.json', 'utf8'));
 
 // Indirizzi dei contratti deployati (sostituire con gli indirizzi effettivi dopo il deploy)
-const rewardTokenAddress = '0xb6C3B41288DC372D847ac491B41cE558fBc328c3';   // <--- DA AGGIORNARE
-const votingAddress = '0xf441fF50AD4e4Cc9840D89bD401E64dC4b6b56c4';        // <--- DA AGGIORNARE
+const rewardTokenAddress = '0x162C5A31a1bcEd65D5C0f76dBf25f996200bc33d';   // <--- DA AGGIORNARE
+const votingAddress = '0xD0eb12F3050D54364c5f9236dd30c1bAE9664e30';        // <--- DA AGGIORNARE
 
 // Creiamo le istanze dei contratti
 const votingContract = new web3.eth.Contract(votingAbi, votingAddress);
@@ -79,11 +79,8 @@ async function interactWithVotingContract() {
     console.log('\n=== 1) Settaggio Verified Buyers ===');
 
 
-    await results.push(await measure(
-            'setVerifiedBuyer', votingContract.methods.setVerifiedBuyer(voter1, true).send({ from: admin, gas: 100000 })
-            
-        ));
-    
+
+    await votingContract.methods.setVerifiedBuyer(voter1, true).send({ from: admin, gas: 100000 });
     console.log(`✅ ${voter1} settato come verified buyer`);
     await votingContract.methods.setVerifiedBuyer(voter2, true).send({ from: admin, gas: 100000 });
     console.log(`✅ ${voter2} settato come verified buyer`);
@@ -93,12 +90,8 @@ async function interactWithVotingContract() {
     console.log('\n=== 2) Submission di Review ===');
 
     
-    await results.push(await measure(
-            'submitReview', votingContract.methods.submitReview("Ottimo prodotto, lo consiglio vivamente!").send({ from: reviewer1, gas: 1000000 })
-            
-        ));
-
-
+ 
+    await votingContract.methods.submitReview("Ottimo prodotto, lo consiglio vivamente!").send({ from: reviewer1, gas: 1000000 });
     console.log('✅ Review #0 submessa da reviewer1');
     await votingContract.methods.submitReview("Prodotto discreto, nulla di eccezionale").send({ from: reviewer2, gas: 1000000 });
     console.log('✅ Review #1 submessa da reviewer2');
@@ -160,12 +153,10 @@ async function interactWithVotingContract() {
     console.log(`   Content: "${reviewBefore.content}"`);
 
 
-    await results.push(await measure(
-            'modifyReview', votingContract.methods.modifyReview(1, "Ho rivisto la mia opinione: il prodotto è fantastico!").send({
+    await votingContract.methods.modifyReview(1, "Ho rivisto la mia opinione: il prodotto è fantastico!").send({
         from: reviewer2,
         gas: 1000000
-    })
-        ));
+    });
 
     console.log('✅ Review #1 modificata da reviewer2');
     console.log('📝 Review #1 dopo la modifica:');
@@ -176,10 +167,7 @@ async function interactWithVotingContract() {
     // 7) Test modifica non autorizzata (dovrebbe fallire)
     console.log('\n=== 7) Test Modifica Non Autorizzata (should fail) ===');
     try {
-        await results.push(await measure( // misura del tempo di esecuzione e gas utilizzato
-            'modifyReview',
-            votingContract.methods.modifyReview(0, "Tentativo di hack").send({ from: voter1, gas: 1000000 })
-        ));
+        await votingContract.methods.modifyReview(0, "Tentativo di hack").send({ from: voter1, gas: 1000000 });
         
         console.error("❌ ERRORE: Modifica non autorizzata accettata (BUG)");
     } catch (err) {
@@ -190,10 +178,8 @@ async function interactWithVotingContract() {
     console.log('\n=== 8) Test Revoca Review ===');
 
     
-    await results.push(await measure( // misura del tempo di esecuzione e gas utilizzato
-            'revokeReview',
-            votingContract.methods.revokeReview(2).send({ from: reviewer1, gas: 150000 })
-        ));
+    await votingContract.methods.revokeReview(2).send({ from: reviewer1, gas: 150000 });
+
     
     console.log('✅ Review #2 revocata da reviewer1');
     const revokedReview = await votingContract.methods.reviews(2).call();
