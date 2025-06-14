@@ -8,17 +8,34 @@ const {
 const { Resolver } = require('did-resolver');
 const ethrDidResolver = require('ethr-did-resolver');
 const crypto = require('crypto');
+const fs                = require('fs');
+const path              = require('path');
+
+// --- helper to measure an eth_call (always gasUsed: 0) ---
+async function measureView(label, promise) {
+  const start = process.hrtime.bigint();
+  await promise;
+  const end   = process.hrtime.bigint();
+  return {
+    label,
+    durationMs: Number(end - start) / 1e6,
+    gasUsed:   0
+  };
+}
 
 (async () => {
+
+  const results = []; 
+
   const providerUrl = 'HTTP://127.0.0.1:7545';
   const web3 = new Web3(providerUrl);
  // Retrieve accounts from Ganache
   const accounts = await web3.eth.getAccounts();
   const address_issuer = accounts[0];
-  const address_subject = accounts[2]; // Subject of the VC
-  const registryAddress = '0x200121fd9B0A16987B753ac5b02891AE81E85D94'; // <-- replace with the DID contract address
-  const privateKey_issuer = '0x75fb73534c061caad700ae50dc4e8e61102bea3460f9c1c0b90e1329ca2edb8b'; // <-- replace with the private key of the address 0
-  const privateKey_subject = '0xd0caa6bfc79d942b81d4394369c06a75c4e77ebe59e53d70ab457a43b4ecf35e'; // <-- replace with the private key of the address 2
+  const address_subject = accounts[1]; // Subject of the VC
+  const registryAddress = '0x9CCf1516CAeba5E03125d86Fd7AE1894D429368e'; // <-- replace with the contract address
+  const privateKey_issuer = '0x627d4edba5fe8f2a03332af990f4c128ce621463ef04f7b41cf64b9b4a3fb8e5'; // <-- replace with the private key of the address 0
+  const privateKey_subject = '0x2076b12e0e3c5b6135a5e19741bcb1541777f9e1f64bb0ebca8431c08b8708de'; // <-- replace with the private key of the address 2
   const chainId = await web3.eth.getChainId();
 
   // Create issuer DID
@@ -36,7 +53,7 @@ const crypto = require('crypto');
     provider: web3.currentProvider,
     chainNameOrId: chainId
   });
-
+  
   // === Step 1: Create hashed claims ===
   const claims = {
     id: subject.did,
@@ -124,6 +141,24 @@ const crypto = require('crypto');
     }]
   }));
 
+  // Measure how long resolve() itself takes
+  // results.push(await measureView(
+  //  'resolver.resolve(subject.did)',
+  //  resolver.resolve(subject.did)
+  // ));
+
+  // Measure full VP verification (includes all on‑chain calls)
+  // results.push(await measureView(
+  //  'verifyPresentation(vpJwt)',
+  //  verifyPresentation(vpJwt, resolver)
+  // ));
+
+  // Measure full VP verification (includes all on‑chain calls)
+  results.push(await measureView(
+    'verifyPresentation (alone)',
+    verifyPresentation(vpJwt, resolver)
+  ));
+
   try {
     const verified = await verifyPresentation(vpJwt, resolver);
     console.log("\n VP verification successful. VP content:\n", JSON.stringify(verified, null, 2));
@@ -153,14 +188,48 @@ const crypto = require('crypto');
   } catch (err) {
     console.error("\n Error during VP verification:", err);
   }
-})();
 
-/**Quelle stampe extra (come disclosedClaims, didResolutionResult, didDocument, verificationMethod, ecc.) 
- * sono la struttura interna del risultato della funzione verifyPresentation(...), che stai stampando:
- *Il valore verified contiene:
-verifiablePresentation, ovvero l'intera presentazione verificata, con:
-@context, type, verifiableCredential
-disclosedClaims: che hai specificato tu nel vpPayload
-proof: la firma JWT della VP
-holder: il DID del soggetto
-didResolutionResult, didDocument, ecc.: sono metadati di risoluzione DID, ottenuti automaticamente dal resolver per validare la firma associata alla presentazione. */
+    console.log("\n=== TEST COMPLETATO ===");
+    console.log("\n=== STAMPA RISULTATI ===");
+    
+    // Stampa misurazioni finale
+    console.table(results, ['label', 'durationMs', 'gasUsed']);
+
+    // Scegli un “base name” per i file
+    const phaseName = 'Phase1and2';
+
+    const outDir    = path.join(__dirname, '..', 'metrics');
+    if (!fs.existsSync(outDir)) fs.mkdirSync(outDir);
+
+    // --- JSONL: facciamo append, non overwrite
+    const jsonlFile = path.join(outDir, `${phaseName}.jsonl`);
+    // Append di una riga JSON+newline
+    fs.appendFileSync(
+        jsonlFile,
+        JSON.stringify(
+        results,
+        (_, v) => typeof v === 'bigint' ? v.toString() : v
+        ) + '\n'
+    );
+    console.log(`📊 Metrics JSONL appese in ${jsonlFile}`);
+
+    // --- CSV: scriviamo l’header solo se il file non esiste, poi appendiamo le righe
+    const csvFile = path.join(outDir, `${phaseName}.csv`);
+    const header  = Object.keys(results[0]).join(',') + '\n';
+    const csvBody = results
+        .map(r => Object.values(r)
+        .map(v => `"${String(v).replace(/"/g, '""')}"`)
+        .join(',')
+        ).join('\n') + '\n';
+
+    if (!fs.existsSync(csvFile)) {
+        // Prima run: creo e scrivo header+body
+        fs.writeFileSync(csvFile, header + csvBody);
+        console.log(`📊 Metrics CSV create in ${csvFile}`);
+    } else {
+        // Run successive: appendo solo il body
+        fs.appendFileSync(csvFile, csvBody);
+        console.log(`📊 Metrics CSV appese in  ${csvFile}`);
+    }
+
+})();
