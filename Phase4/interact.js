@@ -8,7 +8,7 @@ const FormData = require('form-data');
 const web3 = new Web3('HTTP://127.0.0.1:7545');
 const contractAbi = JSON.parse(fs.readFileSync('IpfsStorageAbi.json', 'utf8'));
 
-const contractAddress = '0x1F67E39Ad3E100Fe5C446B6eE263b6B1C719228f';  // ← change here
+const contractAddress = '0x295738615Db4f7611C77A3B9Da3FabeBd206498E';  // ← change here
 
 const contract = new web3.eth.Contract(contractAbi, contractAddress);
 
@@ -201,6 +201,25 @@ async function interactWithContract() {
           ) + '\n'
       );
       console.log(`📊 Metrics JSONL appese in ${jsonlFile}`);
+
+      // --- CSV: scriviamo l’header solo se il file non esiste, poi appendiamo le righe
+    const csvFile = path.join(outDir, `${phaseName}.csv`);
+    const header  = Object.keys(results[0]).join(',') + '\n';
+    const csvBody = results
+        .map(r => Object.values(r)
+        .map(v => `"${String(v).replace(/"/g, '""')}"`)
+        .join(',')
+        ).join('\n') + '\n';
+
+    if (!fs.existsSync(csvFile)) {
+        // Prima run: creo e scrivo header+body
+        fs.writeFileSync(csvFile, header + csvBody);
+        console.log(`📊 Metrics CSV create in ${csvFile}`);
+    } else {
+        // Run successive: appendo solo il body
+        fs.appendFileSync(csvFile, csvBody);
+        console.log(`📊 Metrics CSV appese in  ${csvFile}`);
+    }
 }
 
 interactWithContract();
