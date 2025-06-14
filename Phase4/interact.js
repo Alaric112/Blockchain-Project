@@ -8,7 +8,7 @@ const FormData = require('form-data');
 const web3 = new Web3('HTTP://127.0.0.1:7545');
 const contractAbi = JSON.parse(fs.readFileSync('IpfsStorageAbi.json', 'utf8'));
 
-const contractAddress = '0xea261BB30da16d46504b73f9d1423f89f9aBF4ca';  // ← change here
+const contractAddress = '0x1F67E39Ad3E100Fe5C446B6eE263b6B1C719228f';  // ← change here
 
 const contract = new web3.eth.Contract(contractAbi, contractAddress);
 
@@ -83,8 +83,9 @@ async function measure(label, txPromise) {
 }
 
 
-async function interact() {
-  try {
+async function interactWithContract() {
+  const results = [];
+  try { 
     const accounts = await web3.eth.getAccounts();
     const deployer = accounts[0];
     const merchant = accounts[1];
@@ -105,7 +106,7 @@ async function interact() {
     // 2. Salva CID su blockchain
     console.log('\n=== 2) Salva CID su blockchain ===');
     try {
-      await contract.methods.storeCID(1, reviewer, merchant, cid).send({ from: deployer, gas: 300000 });
+      results.push(await measure('storeCID', contract.methods.storeCID(1, reviewer, merchant, cid).send({ from: deployer, gas: 300000 })));
       console.log('  → CID salvato on-chain.');
     } catch (err) {
       console.error('  ❌ Errore nel salvataggio CID:', err.message);
@@ -116,7 +117,7 @@ async function interact() {
     console.log('\n=== 3) Recupera CID da blockchain ===');
     let retrievedCID;
     try {
-      retrievedCID = await contract.methods.getCID(1).call();
+      results.push(await measure('retrieveCID', retrievedCID = await contract.methods.getCID(1).call()));
       console.log('  → CID recuperato:', retrievedCID);
     } catch (err) {
       console.error('  ❌ Errore nel recupero CID:', err.message);
@@ -137,7 +138,7 @@ async function interact() {
 
     console.log('\n=== 6) Modifica review on-chain ===');
     try {
-      await contract.methods.modifyReview(1, new_cid).send({ from: reviewer, gas: 300000 });
+      results.push(await measure('modifyReview', contract.methods.modifyReview(1, new_cid).send({ from: reviewer, gas: 300000 })));
       console.log('  → Review modificata con successo.');
     } catch (err) {
       console.error('  ❌ Errore nella modifica review:', err.message);
@@ -163,7 +164,7 @@ async function interact() {
     // 9. Elimina la review
     console.log('\n=== 9) Elimina review ===');
     try {
-      await contract.methods.deleteReview(1).send({ from: reviewer, gas: 300000 });
+      results.push(await measure('deleteReview', contract.methods.deleteReview(1).send({ from: reviewer, gas: 300000 })));
       console.log('  → Review eliminata con successo.');
       retrievedCID = await contract.methods.getCID(1).call();
       console.log('  → CID dopo eliminazione:', retrievedCID);
@@ -177,6 +178,29 @@ async function interact() {
   } catch (err) {
     console.error('Errore durante l\'esecuzione:', err);
   }
+
+  console.log("\n=== STAMPA RISULTATI ===");
+      
+      // Stampa misurazioni finale
+      console.table(results, ['label', 'durationMs', 'gasUsed']);
+  
+      // Scegli un “base name” per i file
+      const phaseName = 'Phase4';
+  
+      const outDir    = path.join(__dirname, '..', 'metrics');
+      if (!fs.existsSync(outDir)) fs.mkdirSync(outDir);
+  
+      // --- JSONL: facciamo append, non overwrite
+      const jsonlFile = path.join(outDir, `${phaseName}.jsonl`);
+      // Append di una riga JSON+newline
+      fs.appendFileSync(
+          jsonlFile,
+          JSON.stringify(
+          results,
+          (_, v) => typeof v === 'bigint' ? v.toString() : v
+          ) + '\n'
+      );
+      console.log(`📊 Metrics JSONL appese in ${jsonlFile}`);
 }
 
-interact();
+interactWithContract();
