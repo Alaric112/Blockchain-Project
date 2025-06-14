@@ -1,10 +1,13 @@
 # Blockchain-Project
 Repository of the Blockchain Project of group 7
+
 Accademic Year 2024/2025
 
-Authors:
+# Authors:
 Alessandro Accarino
+
 Lorenzo Borrelli
+
 Luca Concilio
 
 # How to Run the Code
