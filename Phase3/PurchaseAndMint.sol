@@ -92,12 +92,12 @@ contract PurchaseAndMint {
          // 1) Trasferiamo l’ETH all’indirizzo del merchant
         escrowedethr[buyer] -= ord.cost;
         payable(msg.sender).transfer(ord.cost);
+        settledOrders[orderId] = true;
 
         // 2) Mint del proof-of-purchase soulbound al buyer
         //    → `mint` non prende tokenId, lo genera da sé (1, 2, 3, …)
         nft.mint(buyer, orderId, msg.sender);
 
-        settledOrders[orderId] = true;
         emit OrderSettled(orderId);
     }
 }

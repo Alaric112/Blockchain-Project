@@ -7,6 +7,7 @@ pragma solidity ^0.8.0;
 ///         e non esistono funzioni di trasferimento. 
 
 contract MyTokenNFT {
+    address public admin; // Admin address for special privileges
 
     // ----------------------------------------------------------------------------
     // 1) Struttura dati
@@ -45,9 +46,18 @@ contract MyTokenNFT {
     // 3) Costruttore
     // ----------------------------------------------------------------------------
     constructor() {
-        // (nessuna inizializzazione aggiuntiva)
+        admin = msg.sender;        
     }
 
+    // Modifier to restrict functions to the admin
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only admin can perform this action");
+        _;
+    }
+
+    function setAdmin(address newAdmin) external onlyAdmin {
+    admin = newAdmin;
+}
 
     // ----------------------------------------------------------------------------
     // 4) Funzione di mint “automatico”: assegna a recipient il prossimo tokenId = tokenHash
@@ -55,7 +65,7 @@ contract MyTokenNFT {
     /// @notice Crea un nuovo TokenNFT “soulbound” (non trasferibile) con ID = tokenHash corrente,
     ///         lo assegna a recipient e incrementa tokenHash di 1.
     /// @param recipient  L’indirizzo che riceverà il token.
-    function mint(address recipient, uint256 orderId, address merchant) external {
+    function mint(address recipient, uint256 orderId, address merchant) external onlyAdmin{
 
         require(recipient != address(0), "MyTokenNFT: mint a zero address");
         uint256 newTokenId = tokenHash;

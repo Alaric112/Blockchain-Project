@@ -11,8 +11,8 @@ const tokenAbi = JSON.parse(fs.readFileSync("MyTokenNFTAbi.json", "utf8"));
 
 // Set contract address (use the one from deployment)
 // Iserire qui gli indirizzi dei contratti deployati
-const tokenAddress    = '0xC5FBeDD4b50979317a53B56E6FE9987d73Ab19d5'; // <--------------- DA aggiornare
-const purchaseAddress = '0xF83F4Aa1b222a0Da2718a8D6A159F60db5403a30'; // <--------------- DA aggiornare
+const tokenAddress    = '0x1756D78BAA2Caca5dD16bA9489EE23FdCbFdE455'; // <--------------- DA aggiornare
+const purchaseAddress = '0x81BD67B3aEcB1CBC69E161cc830a1a07c5e99B6d'; // <--------------- DA aggiornare
 
 // Creiamo l’istanza del contratto
 const contract = new web3.eth.Contract(abi, purchaseAddress);
@@ -65,7 +65,7 @@ async function interactWithContract() {
     // ──────────────────────────────────────────────────────────────
     // Definizione dei parametri di test
     // ──────────────────────────────────────────────────────────────
-    const orderId    = 5000;
+    const orderId    = 1;
     const shopDID    = 'did:shop:XYZ';
     const priceEth   = '0.1';
     const priceWei   = web3.utils.toWei(priceEth, 'ether'); // 1 ETH
@@ -91,6 +91,16 @@ async function interactWithContract() {
     console.log('  expiration  =', expiration);
     console.log('  orderSecret =', orderSecret);
     console.log('  commitment  =', commitment);
+
+    console.log('\n=== 0) Modifying admin of MyTokenNFT ===');
+    try {
+        await nftContract.methods.setAdmin(purchaseAddress).send({from: accounts[0]});
+
+    } catch (err) {
+        console.error('  ❌ Errore in setAdmin:', err.message);
+        process.exit(1);
+
+    }
 
     // ──────────────────────────────────────────────────────────────
     // registerOrder (merchant)
